@@ -600,31 +600,6 @@ app.post('/api/v1/checkout/verify-utr', async (req, res) => {
            !watcher.isPaymentClaimed(p);
   });
 
-  // ---------------- TEMPORARY TEST MODE (auto-expires) ----------------
-  // Accepts ANY 12-digit UTR (e.g. from an old SMS) WITHOUT bank confirmation.
-  // Only for orders up to Rs 10, and only until the time below. Remove after testing.
-  const TEST_ANY_UTR_UNTIL = Date.parse('2026-11-23T23:59:00+05:30');
-  if (!matched && Date.now() < TEST_ANY_UTR_UNTIL && /^\d{12}$/.test(cleanUtr) && order.amount <= 10) {
-    const testPayment = {
-      uid: `TESTUTR_${cleanUtr}`,
-      amount: order.amount,
-      senderName: 'TEST',
-      utr: cleanUtr,
-      txnId: `TEST-${cleanUtr}`,
-      date: new Date(),
-      rawSubject: 'TEST MODE manual UTR',
-      snippet: `TEST MODE: UTR ${cleanUtr} entered manually, not bank verified`,
-      source: 'TEST MODE: manual UTR (NOT bank verified)'
-    };
-    if (!watcher.isPaymentClaimed(testPayment)) {
-      console.log(`[TEST-MODE] Order ${orderId} marked PAID with manual UTR ${cleanUtr} (not bank verified)`);
-      await watcher.executeOrderMatch(order, testPayment, 'TEST_MODE_MANUAL_UTR');
-      return res.json({ success: true, verified: true, testMode: true, order: store.getOrder(orderId) });
-    }
-    return res.json({ success: false, verified: false, message: 'This UTR was already used for another order.' });
-  }
-  // -------------------------------------------------------------------
-
   if (matched) {
     watcher.executeOrderMatch(order, matched, 'MANUAL_UTR_CONFIRMATION');
     const updated = store.getOrder(orderId);
@@ -704,6 +679,9 @@ app.post('/api/v1/sms-webhook', async (req, res) => {
 // Same parser + matching engine as real SMS. Marked as TEST in the order.
 // ==============================================================
 app.get('/api/v1/sms-test', async (req, res) => {
+  if (process.env.ENABLE_SMS_TEST !== 'true') {
+    return res.status(404).json({ error: 'Not found' });
+  }
   const secret = process.env.SMS_WEBHOOK_SECRET || '';
   const given = String(req.query.secret || '');
   if (secret.length < 16 || (!safeEqual(given, secret) && !safeEqual(given.replace(/ /g, '+'), secret))) {

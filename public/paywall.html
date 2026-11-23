@@ -3,279 +3,141 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Secure UPI Checkout • SidPay</title>
+  <meta name="theme-color" content="#F3F5FA">
+  <title>Pay SidTech 366 | SidPay</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/paywall.css">
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 </head>
 <body>
-  <div class="bg-mesh"></div>
+  <main class="page">
 
-  <main class="checkout-wrapper">
-    
-    <!-- PAYWALL ACTIVE CARD -->
-    <div class="paywall-card" id="paywallCard">
-      
-      <!-- Top Brand Header -->
-      <div class="card-top">
-        <div class="merchant-badge">
-          <div class="merchant-logo-mark" id="merchantLogo">A</div>
-          <div>
-            <h2 class="merchant-name" id="merchantNameDisplay">SidTech 366</h2>
-            <div class="verified-merchant-tag">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                <polyline points="20 6 9 17 4 12"/>
-              </svg>
-              Verified Merchant
-            </div>
-          </div>
-        </div>
+    <!-- ============ PAYMENT SCREEN ============ -->
+    <section class="sheet" id="paywallCard" aria-labelledby="amountDisplay">
 
-        <div class="order-ref-pill">
-          <span class="ref-label">Order</span>
-          <span class="ref-val font-mono" id="orderRefDisplay">PAY-000000</span>
+      <header class="payee">
+        <div class="payee-mark" id="merchantLogo" aria-hidden="true">S</div>
+        <div class="payee-text">
+          <p class="payee-label">Paying</p>
+          <h1 class="payee-name" id="merchantNameDisplay">SidTech 366</h1>
         </div>
+        <p class="order-ref">Order <span id="orderRefDisplay">—</span></p>
+      </header>
+
+      <div class="amount-block">
+        <p class="amount" id="amountDisplay">₹0.00</p>
+        <p class="purpose" id="purposeDisplay">Payment</p>
+        <p class="exact-note" id="exactAmountNote">Pay the exact amount shown, including paise, so your payment is confirmed automatically.</p>
       </div>
 
-      <!-- Amount Header -->
-      <div class="amount-hero">
-        <span class="currency-tag">Amount to Pay</span>
-        <div class="amount-val" id="amountDisplay">₹0.00</div>
-        <div class="amount-purpose" id="purposeDisplay">Make a payment and get source code of complete payment gateway</div>
-      </div>
-
-      <!-- Digital Product Highlight Banner -->
-      <div class="product-highlight-banner">
-        <div class="product-badge">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="16 18 22 12 16 6"></polyline>
-            <polyline points="8 6 2 12 8 18"></polyline>
-          </svg>
-          <span>Instant Download</span>
-        </div>
-        <p class="product-title-text">Make a payment and get source code of complete payment gateway</p>
-      </div>
-
-      <!-- Dynamic QR & Scanner Showcase -->
-      <div class="qr-showcase-box">
+      <div class="qr-block">
         <div class="qr-frame">
-          <div class="laser-scanner"></div>
-          <!-- Dynamic modified QR Code with exact amount -->
-          <img src="/uploads/default-qr.jpeg" alt="Dynamic UPI QR" class="dynamic-qr-img" id="dynamicQrImg">
+          <img src="/uploads/default-qr.jpeg" alt="UPI QR code for this payment" id="dynamicQrImg" width="220" height="220">
         </div>
-
-        <!-- Down payment badge below QR -->
-        <div class="down-payment-label">
-          <span class="live-pulse"></span>
-          <span>SCAN &amp; PAY EXACT AMOUNT • INSTANT SOURCE CODE ACCESS</span>
-        </div>
+        <p class="qr-caption">Scan with PhonePe, Google Pay, Paytm or any UPI app</p>
       </div>
 
-      <!-- 1-Tap Mobile Intent Deep-Links -->
-      <div class="intent-section" id="intentSection">
-        <div class="intent-divider">
-          <span>OR PAY VIA MOBILE UPI APP</span>
-        </div>
-
-        <!-- Universal / Direct UPI Intent -->
-        <a id="btnPayDirect" class="btn-intent-primary" href="#">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-          </svg>
-          <span id="btnPayDirectText">Pay via Any UPI App</span>
-        </a>
-
-        <!-- App-Specific Dedicated Deep-Links -->
-        <div class="intent-grid">
-          <a id="btnPhonePe" class="intent-card app-phonepe" href="#" style="display: none;">
-            <div class="intent-icon-wrap" style="background: #5f259f;">
-              <span class="intent-app-initial">P</span>
-            </div>
-            <span class="intent-app-name">PhonePe</span>
+      <div class="apps" id="intentSection">
+        <p class="apps-label">On this phone? Open your app directly</p>
+        <div class="app-row">
+          <a id="btnPhonePe" class="app" href="#">
+            <span class="app-icon" style="--c:#5F259F">Pe</span>
+            <span class="app-name">PhonePe</span>
           </a>
-
-          <a id="btnPaytm" class="intent-card app-paytm" href="#">
-            <div class="intent-icon-wrap" style="background: #00baf2;">
-              <span class="intent-app-initial" style="font-size: 10px;">Pay</span>
-            </div>
-            <span class="intent-app-name">Paytm</span>
+          <a id="btnGPay" class="app" href="#">
+            <span class="app-icon" style="--c:#1A73E8">G</span>
+            <span class="app-name">Google Pay</span>
           </a>
-
-          <a id="btnFamPay" class="intent-card app-fampay" href="#">
-            <div class="intent-icon-wrap" style="background: #ffd200; color: #1e293b;">
-              <span class="intent-app-initial">F</span>
-            </div>
-            <span class="intent-app-name">FamPay</span>
+          <a id="btnPaytm" class="app" href="#">
+            <span class="app-icon" style="--c:#00BAF2">Pt</span>
+            <span class="app-name">Paytm</span>
           </a>
-
-          <a id="btnNavi" class="intent-card app-navi" href="#">
-            <div class="intent-icon-wrap" style="background: #00c6ff;">
-              <span class="intent-app-initial">N</span>
-            </div>
-            <span class="intent-app-name">Navi</span>
-          </a>
-
-          <a id="btnSuperMoney" class="intent-card app-supermoney" href="#">
-            <div class="intent-icon-wrap" style="background: linear-gradient(135deg, #10b981, #047857);">
-              <span class="intent-app-initial">S</span>
-            </div>
-            <span class="intent-app-name">super.money</span>
+          <a id="btnPayDirect" class="app" href="#">
+            <span class="app-icon app-icon-any" style="--c:#172033">UPI</span>
+            <span class="app-name" id="btnPayDirectText">Other app</span>
           </a>
         </div>
       </div>
 
-      <!-- UPI ID Copy & Manual Details -->
-      <div class="pay-actions">
-        <div class="upi-id-bar">
-          <div class="upi-text-wrap">
-            <span class="upi-sub">Direct Payee UPI ID</span>
-            <span class="upi-address font-mono" id="upiIdDisplay"></span>
-          </div>
-          <button type="button" class="btn-copy" id="copyUpiBtn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-            <span>Copy</span>
-          </button>
+      <div class="upi-row">
+        <div>
+          <p class="upi-label">UPI ID</p>
+          <p class="upi-id" id="upiIdDisplay"></p>
         </div>
+        <button type="button" class="btn-ghost" id="copyUpiBtn">Copy</button>
       </div>
 
-      <!-- Real-Time Auto-Verification Radar -->
-      <div class="radar-status-bar">
-        <div class="radar-circle">
-          <div class="radar-wave"></div>
-          <div class="radar-dot"></div>
+      <div class="status" role="status" aria-live="polite">
+        <span class="status-dot" aria-hidden="true"></span>
+        <div class="status-text">
+          <p class="status-title" id="radarTitle">Waiting for your payment</p>
+          <p class="status-sub" id="radarDesc">This page updates by itself once the bank confirms. Keep it open.</p>
         </div>
-        <div class="radar-info">
-          <div class="radar-title" id="radarTitle">Auto-verifying payment in real time...</div>
-          <div class="radar-desc" id="radarDesc">Waiting for bank confirmation. No page reload required.</div>
-        </div>
-        <div class="session-timer font-mono" id="paywallTimer">04:59</div>
+        <p class="status-timer" id="paywallTimer" aria-label="Time left">20:00</p>
       </div>
 
-      <!-- Manual UTR Fallback -->
-      <div class="utr-accordion">
-        <div class="utr-toggle" id="utrToggle">
-          <span>Paid already? Enter UTR / Ref Number manually</span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 12 15 18 9"/>
-          </svg>
-        </div>
-        <div class="utr-drawer hidden" id="utrDrawer">
-          <div class="utr-input-row">
-            <input type="text" id="manualUtrInput" class="utr-field" placeholder="Enter 12-digit UPI UTR">
-            <button type="button" class="btn-verify-utr" id="submitUtrBtn">Verify UTR</button>
+      <details class="utr">
+        <summary id="utrToggle">Paid, but this page has not updated?</summary>
+        <div id="utrDrawer">
+          <p class="utr-help">Enter the 12-digit UPI Ref No (UTR) from your payment app or bank SMS.</p>
+          <div class="utr-row">
+            <label class="sr-only" for="manualUtrInput">UPI reference number</label>
+            <input type="text" id="manualUtrInput" inputmode="numeric" autocomplete="off" maxlength="22" placeholder="e.g. 632715784568">
+            <button type="button" class="btn-primary" id="submitUtrBtn">Check payment</button>
           </div>
         </div>
+      </details>
+    </section>
+
+    <!-- ============ INVALID / EXPIRED LINK ============ -->
+    <section class="sheet notice hidden" id="invalidCard">
+      <h1 class="notice-title" id="invalidTitle">This payment link is not valid</h1>
+      <p class="notice-text" id="invalidText">Please ask SidTech 366 for a new payment link. No money has been taken.</p>
+      <a class="btn-primary" href="tel:+917069492135">Call 70694 92135</a>
+    </section>
+
+    <!-- ============ RECEIPT (after payment) ============ -->
+    <section class="receipt hidden" id="successCard" aria-labelledby="receiptHeading">
+      <div class="receipt-paper">
+        <header class="receipt-head">
+          <div>
+            <p class="receipt-org">SidTech 366</p>
+            <h1 class="receipt-heading" id="receiptHeading">Payment receipt</h1>
+          </div>
+          <div class="stamp" aria-label="Paid">PAID</div>
+        </header>
+
+        <p class="receipt-amount" id="successAmtDisplay">₹0.00</p>
+        <p class="receipt-for" id="receiptPurpose"></p>
+
+        <dl class="receipt-rows">
+          <div><dt>Receipt for order</dt><dd id="receiptOrderId">—</dd></div>
+          <div><dt>Paid by</dt><dd id="receiptPayer">—</dd></div>
+          <div><dt>Paid to</dt><dd id="receiptPayee">SidTech 366</dd></div>
+          <div><dt>UPI Ref No (UTR)</dt><dd id="receiptUtr">—</dd></div>
+          <div class="hidden"><dt>Transaction ID</dt><dd id="receiptTxnId">—</dd></div>
+          <div><dt>Confirmed on</dt><dd id="receiptTime">—</dd></div>
+        </dl>
+
+        <p class="receipt-foot">Confirmed from the bank's credit alert. Keep this receipt for your records.<br>
+          SidTech 366, <span class="nowrap">70694 92135</span>, sidtech366@gmail.com</p>
       </div>
 
-      <!-- Security Guarantee -->
-      <div class="security-foot">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-        </svg>
-        <span>End-to-End Encrypted Peer-to-Peer UPI Settlement</span>
-      </div>
-
-    </div>
-
-    <!-- SUCCESS SCREEN (Hidden by default) -->
-    <div class="success-card hidden" id="successCard">
-      <div class="checkmark-wrap">
-        <div class="checkmark-circle">
-          <svg class="checkmark-svg" viewBox="0 0 52 52">
-            <circle class="checkmark-circle-bg" cx="26" cy="26" r="25" fill="none"/>
-            <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-          </svg>
-        </div>
-      </div>
-
-      <div class="success-headline">
-        <span class="pill-verified">Payment Confirmed &amp; Verified</span>
-        <h2 class="success-amt" id="successAmtDisplay">₹0.00</h2>
-        <p class="success-sub">Transaction received and validated via merchant bank alert stream.</p>
-      </div>
-
-      <!-- Digital Delivery & Google Drive Download Box -->
-      <div class="delivery-card" id="deliveryCard">
-        <div class="delivery-header">
-          <span class="delivery-badge">PAYMENT VERIFIED • SOURCE CODE UNLOCKED</span>
-          <h3 class="delivery-title">Your Payment Gateway Source Code is Ready!</h3>
-          <p class="delivery-desc">Redirecting to Google Drive download in <span id="redirectCountdown" class="countdown-pill">3s</span>...</p>
-        </div>
-        <a id="btnDownloadDrive" class="btn-download-drive" href="#" target="_blank" rel="noopener noreferrer">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-          <span>Download Complete Source Code (Google Drive)</span>
-        </a>
-      </div>
-
-      <!-- Receipt Box -->
-      <div class="receipt-card">
-        <div class="receipt-row">
-          <span>Order ID</span>
-          <strong class="font-mono" id="receiptOrderId">-</strong>
-        </div>
-        <div class="receipt-row">
-          <span>Paid By</span>
-          <strong id="receiptPayer">-</strong>
-        </div>
-        <div class="receipt-row">
-          <span>Paid To</span>
-          <strong id="receiptPayee">-</strong>
-        </div>
-        <div class="receipt-row">
-          <span>Bank UTR / Ref</span>
-          <strong class="font-mono text-emerald" id="receiptUtr">-</strong>
-        </div>
-        <div class="receipt-row">
-          <span>Transaction ID</span>
-          <strong class="font-mono" id="receiptTxnId">-</strong>
-        </div>
-        <div class="receipt-row">
-          <span>Verified At</span>
-          <strong id="receiptTime">-</strong>
-        </div>
-      </div>
-
-      <!-- Receipt Actions -->
       <div class="receipt-actions">
-        <button type="button" class="btn-print" id="printReceiptBtn">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="6 9 6 2 18 2 18 9"/>
-            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-            <rect x="6" y="14" width="12" height="8"/>
-          </svg>
-          Print Receipt
-        </button>
-        <button type="button" class="btn-recheck" id="btnRecheckStatus">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="23 4 23 10 17 10"></polyline>
-            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-          </svg>
-          Check Again
-        </button>
-        <button type="button" class="btn-pay-again" id="btnPayAgain">
-          Pay Again (New ₹199)
-        </button>
-        <button type="button" class="btn-return" id="returnMerchantBtn">
-          Done
-        </button>
+        <button type="button" class="btn-primary" id="printReceiptBtn">Save or print receipt</button>
+        <button type="button" class="btn-ghost" id="returnMerchantBtn">Done</button>
       </div>
-    </div>
+    </section>
 
+    <footer class="site-foot">
+      Payments by SidPay, a <a href="https://sidtech366.vercel.app">SidTech 366</a> service. Help: <a class="nowrap" href="tel:+917069492135">70694 92135</a>
+    </footer>
   </main>
 
-  <div class="toast-box" id="toastBox"></div>
+  <div class="toast-box" id="toastBox" aria-live="polite"></div>
 
   <script src="/js/checkout.js"></script>
   <script src="/paywall.js"></script>
-  <div style="text-align:center;font-size:12px;color:#64748b;padding:14px 8px;">Powered by <b>SidPay</b> • SidTech 366 • 7069492135 • <a href="https://sidtech366.vercel.app" style="color:inherit">sidtech366.vercel.app</a></div>
 </body>
 </html>

@@ -4,6 +4,7 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+  const inr = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   const pathParts = window.location.pathname.split('/').filter(Boolean);
   const isTestRoute = window.location.pathname.startsWith('/test') || new URLSearchParams(window.location.search).get('test') === '1';
   let orderId = pathParts[pathParts.length - 1];
@@ -14,6 +15,8 @@ document.addEventListener('DOMContentLoaded', () => {
   let pollTimer = null;
   let countdownTimer = null;
   let redirectTimer = null;
+  let orderCreatedAt = Date.now();
+  const PAYMENT_WINDOW_MS = 20 * 60 * 1000; // server matches payments within 20 minutes
 
   // DOM Elements
   const paywallCard = document.getElementById('paywallCard');
@@ -53,14 +56,8 @@ document.addEventListener('DOMContentLoaded', () => {
   init();
 
   async function init() {
-    // If order ID is 'new', empty, 'pay', or 'test', automatically create a dynamic checkout!
-    if (!orderId || orderId === 'pay' || orderId === 'new' || orderId === 'test') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const defaultAmt = isTestRoute ? 1.00 : 199.00;
-      const reqAmount = parseFloat(urlParams.get('amount')) || defaultAmt;
-      const customerName = isTestRoute ? 'Test User' : 'Gateway Source Customer';
-      const note = isTestRoute ? 'Payment Gateway Test ₹1.00' : 'Complete Gateway Source Code';
-      await createNewDynamicOrder(reqAmount, customerName, note, isTestRoute);
+    if (!orderId || ['pay', 'new', 'test', 'checkout'].includes(orderId)) {
+      showInvalid();
       return;
     }
 
@@ -75,10 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       const data = await res.json();
       if (!data.success || !data.order) {
-        showToast('Order not found. Generating new dynamic order...');
-        const defaultAmt = isTestRoute ? 1.00 : 199.00;
-        const note = isTestRoute ? 'Payment Gateway Test ₹1.00' : 'Complete Gateway Source Code';
-        setTimeout(() => createNewDynamicOrder(defaultAmt, 'Customer', note, isTestRoute), 1200);
+        showInvalid();
         return;
       }
 
@@ -94,10 +88,18 @@ document.addEventListener('DOMContentLoaded', () => {
       setupSSE();
       startPolling();
     } catch (e) {
-      showToast('Could not load checkout order');
+      showInvalid('Could not load this payment', 'Check your internet connection and open the link again.');
     }
 
     setupEvents();
+  }
+
+  function showInvalid(title, text) {
+    paywallCard.classList.add('hidden');
+    const card = document.getElementById('invalidCard');
+    if (title) document.getElementById('invalidTitle').textContent = title;
+    if (text) document.getElementById('invalidText').textContent = text;
+    card.classList.remove('hidden');
   }
 
   async function createNewDynamicOrder(amount = 199.00, customerName = 'Gateway Source Customer', note = 'Complete Gateway Source Code', isTest = false) {
@@ -133,35 +135,22 @@ document.addEventListener('DOMContentLoaded', () => {
     orderRefDisplay.textContent = o.orderId || o.orderCode;
     merchantNameDisplay.textContent = m.businessName || 'SidTech 366';
     merchantLogo.textContent = ((m.businessName || 'SidTech')[0] || 'S').toUpperCase();
-    amountDisplay.textContent = `₹${parseFloat(o.amount).toFixed(2)}`;
+    amountDisplay.textContent = inr(o.amount);
 
-    const isTestOrder = isTestRoute || (o.note && o.note.toLowerCase().includes('test')) || (parseFloat(o.amount) <= 5);
-    if (isTestOrder) {
-      purposeDisplay.textContent = o.note || 'UPI System Test Payment • ₹1 Auto-Verification';
-      const productBadge = document.querySelector('.product-badge span');
-      const productTitleText = document.querySelector('.product-title-text');
-      if (productBadge) productBadge.textContent = '⚡ TEST PAYMENT (₹1)';
-      if (productTitleText) productTitleText.textContent = 'Make a ₹1 payment to test live bank credit auto-verification and success screen';
-      const downPaymentSpan = document.querySelector('.down-payment-label span:last-child');
-      if (downPaymentSpan) downPaymentSpan.textContent = 'SCAN & PAY EXACT ₹1 • INSTANT AUTO-VERIFICATION';
-      if (btnPayAgain) btnPayAgain.textContent = 'Test Again (New ₹1)';
-    } else {
-      purposeDisplay.textContent = o.note || 'Make a payment and get source code of complete payment gateway';
-      if (btnPayAgain) btnPayAgain.textContent = 'Pay Again (New ₹199)';
+    purposeDisplay.textContent = o.note || 'Payment';
+    const exactNote = document.getElementById('exactAmountNote');
+    if (exactNote) {
+      exactNote.textContent = `Pay exactly ${inr(o.amount)}, including paise, so your payment is confirmed automatically.`;
     }
-    
+    document.title = `Pay ${inr(o.amount)} to ${m.businessName || 'SidTech 366'}`;
+    orderCreatedAt = new Date(o.createdAt || Date.now()).getTime();
+
     // Dynamic QR with exact pre-filled amount
     if (o.dynamicQrDataUrl) {
       dynamicQrImg.src = o.dynamicQrDataUrl;
     }
     
     upiIdDisplay.textContent = m.upiId || '';
-
-    // Show PhonePe intent specifically on test route (/test/new or ₹1 test payments)
-    const btnPhonePe = document.getElementById('btnPhonePe');
-    if (btnPhonePe) {
-      btnPhonePe.style.display = isTestOrder ? 'flex' : 'none';
-    }
 
     // 1-Tap Mobile Intent Deep-Links configuration
     if (typeof window.setupUpiIntentLinks === 'function') {
@@ -226,20 +215,17 @@ document.addEventListener('DOMContentLoaded', () => {
     copyUpiBtn.addEventListener('click', () => {
       const id = upiIdDisplay.textContent;
       navigator.clipboard.writeText(id).then(() => {
-        showToast('UPI ID copied to clipboard: ' + id);
+        showToast('UPI ID copied');
       });
     });
 
-    utrToggle.addEventListener('click', () => {
-      utrDrawer.classList.toggle('hidden');
-    });
 
     submitUtrBtn.addEventListener('click', async () => {
       const utr = manualUtrInput.value.trim();
-      if (!utr) return showToast('Enter 12-digit UTR');
+      if (!utr) return showToast('Enter the 12-digit UPI Ref No');
 
       submitUtrBtn.disabled = true;
-      submitUtrBtn.textContent = 'Checking...';
+      submitUtrBtn.textContent = 'Checking…';
 
       try {
         const res = await fetch(`/api/v1/checkout/verify-utr?_t=${Date.now()}`, {
@@ -254,10 +240,10 @@ document.addEventListener('DOMContentLoaded', () => {
           showToast(data.message || 'UTR not verified yet.');
         }
       } catch (e) {
-        showToast('Error checking UTR.');
+        showToast('Could not check right now. Try again in a moment.');
       } finally {
         submitUtrBtn.disabled = false;
-        submitUtrBtn.textContent = 'Verify UTR';
+        submitUtrBtn.textContent = 'Check payment';
       }
     });
 
@@ -287,7 +273,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     printReceiptBtn.addEventListener('click', () => window.print());
     returnMerchantBtn.addEventListener('click', () => {
-      window.location.href = `/api/v1/checkout/delivery/${orderId}`;
+      if (document.referrer && !document.referrer.includes(window.location.host)) {
+        window.location.href = document.referrer;
+      } else {
+        window.close();
+        setTimeout(() => { window.location.href = 'https://sidtech366.vercel.app'; }, 300);
+      }
     });
   }
 
@@ -312,7 +303,6 @@ document.addEventListener('DOMContentLoaded', () => {
     pollTimer = setInterval(async () => {
       if (isVerified) return clearInterval(pollTimer);
       count++;
-      radarTitle.textContent = `Auto-verifying payment${'.'.repeat((count % 3) + 1)}`;
       await checkStatusNow(false);
     }, 750);
 
@@ -332,7 +322,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function checkStatusNow(isManual = false) {
     try {
-      if (isManual) showToast('Checking payment status in real-time...');
+      if (isManual) showToast('Checking payment status…');
       const res = await fetch(`/api/v1/checkout/status/${orderId}?_t=${Date.now()}`, {
         cache: 'no-store',
         headers: {
@@ -347,27 +337,33 @@ document.addEventListener('DOMContentLoaded', () => {
           orderData.merchant = data.merchant;
         }
         triggerSuccess(data.order.paymentDetails || {}, data.order);
-        if (isManual) showToast('✓ Payment verified successfully!');
+        if (isManual) showToast('Payment confirmed');
       } else if (isManual) {
-        showToast('Payment not yet verified. Awaiting bank alert...');
+        showToast('Not confirmed yet. Bank confirmation can take a minute.');
       }
     } catch (e) {
-      if (isManual) showToast('Could not reach verification server.');
+      if (isManual) showToast('Could not reach the server. Check your internet.');
     }
   }
 
   function startTimers() {
-    countdownTimer = setInterval(() => {
+    const tick = () => {
       if (isVerified) return clearInterval(countdownTimer);
-      timerSeconds--;
-      if (timerSeconds <= 0) {
-        clearInterval(countdownTimer);
-        timerSeconds = 300;
-      }
-      const mins = Math.floor(timerSeconds / 60);
-      const secs = timerSeconds % 60;
+      const left = Math.max(0, Math.floor((orderCreatedAt + PAYMENT_WINDOW_MS - Date.now()) / 1000));
+      const mins = Math.floor(left / 60);
+      const secs = left % 60;
       paywallTimer.textContent = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-    }, 1000);
+      if (left <= 0) {
+        clearInterval(countdownTimer);
+        const statusEl = document.querySelector('.status');
+        if (statusEl) statusEl.classList.add('expired');
+        radarTitle.textContent = 'This payment link has expired';
+        const desc = document.getElementById('radarDesc');
+        if (desc) desc.textContent = 'Do not pay now. If you already paid, enter the UPI Ref No below.';
+      }
+    };
+    tick();
+    countdownTimer = setInterval(tick, 1000);
   }
 
   function triggerSuccess(payment, order) {
@@ -377,10 +373,9 @@ document.addEventListener('DOMContentLoaded', () => {
     clearInterval(countdownTimer);
 
     playSuccessChime();
-    fireConfetti();
 
     const amt = parseFloat(order.amount || 1).toFixed(2);
-    successAmtDisplay.textContent = `₹${amt}`;
+    successAmtDisplay.textContent = inr(amt);
     receiptOrderId.textContent = order.orderId;
     receiptPayer.textContent = (payment && payment.senderName) || (order && order.customerName) || 'UPI Customer';
     receiptPayee.textContent = (orderData && orderData.merchant && orderData.merchant.businessName) || 'SidTech 366';
@@ -388,52 +383,15 @@ document.addEventListener('DOMContentLoaded', () => {
     receiptTxnId.textContent = (payment && payment.txnId) || (order.paymentDetails && order.paymentDetails.txnId) || `TXN-${(payment && payment.utr) || Date.now()}`;
     
     const validDate = (payment && payment.date) || (order && order.verifiedAt) || Date.now();
-    receiptTime.textContent = new Date(validDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    receiptTime.textContent = new Date(validDate).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
     paywallCard.classList.add('hidden');
     successCard.classList.remove('hidden');
-    document.title = `✓ Paid ₹${amt} - Confirmed • SidPay`;
+    document.title = `Paid ${inr(amt)} to ${receiptPayee.textContent}`;
 
-    const isTestOrder = isTestRoute || (order.note && order.note.toLowerCase().includes('test')) || (parseFloat(order.amount) <= 5);
-    if (isTestOrder) {
-      const deliveryBadge = document.querySelector('.delivery-badge');
-      const deliveryTitle = document.querySelector('.delivery-title');
-      const deliveryDesc = document.querySelector('.delivery-desc');
-      const verifiedPill = document.querySelector('.pill-verified');
-      if (verifiedPill) verifiedPill.textContent = '₹1 Test Payment Verified & Confirmed';
-      if (deliveryBadge) deliveryBadge.textContent = 'LIVE SYSTEM TEST PASSED • GATEWAY ACTIVE';
-      if (deliveryTitle) deliveryTitle.textContent = '✅ ₹1 Payment Successfully Verified!';
-      if (deliveryDesc) deliveryDesc.textContent = 'Bank credit alert was received and matched in real-time! Gateway is fully operational.';
-    }
-
-    // Secure Server-Side Delivery & Auto-Redirect (Only accessible after verified payment)
-    const deliveryEndpoint = `/api/v1/checkout/delivery/${order.orderId}`;
-    const downloadEndpoint = `/api/v1/checkout/delivery/${order.orderId}?download=1`;
-
-    const btnDownloadDrive = document.getElementById('btnDownloadDrive');
-    if (btnDownloadDrive) {
-      btnDownloadDrive.href = deliveryEndpoint;
-      btnDownloadDrive.addEventListener('click', () => {
-        triggerDeliveryDownload(downloadEndpoint);
-      });
-    }
-
-    let countdown = 3;
-    const countdownEl = document.getElementById('redirectCountdown');
-    if (redirectTimer) clearInterval(redirectTimer);
-    redirectTimer = setInterval(() => {
-      countdown--;
-      if (countdownEl) {
-        countdownEl.textContent = `${countdown}s`;
-      }
-      if (countdown <= 0) {
-        clearInterval(redirectTimer);
-        // Direct download attempt on phone/browser via verified backend endpoint
-        triggerDeliveryDownload(downloadEndpoint);
-        // Direct redirect via verified backend endpoint
-        window.location.href = deliveryEndpoint;
-      }
-    }, 1000);
+    successCard.classList.add('show');
+    const purposeEl = document.getElementById('receiptPurpose');
+    if (purposeEl) purposeEl.textContent = order.note || '';
   }
 
   function triggerDeliveryDownload(url) {
