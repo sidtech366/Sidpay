@@ -583,12 +583,19 @@ app.post('/api/v1/checkout/verify-utr', async (req, res) => {
 
   await watcher.syncAndProcess(25);
 
-  const cleanUtr = utr.trim().toLowerCase();
+  if (order.status === 'PAID') {
+    return res.json({ success: true, verified: true, order });
+  }
+
+  // SECURITY: exact UTR match only (partial input like "5" must not match)
+  const cleanUtr = String(utr).replace(/\s+/g, '').toLowerCase();
+  if (!/^[0-9a-z]{10,22}$/.test(cleanUtr)) {
+    return res.status(400).json({ error: 'Enter the full 12-digit UTR / UPI Ref No' });
+  }
   const matched = watcher.recentPayments.find(p => {
     const pUtr = (p.utr || '').toLowerCase();
     const pTxn = (p.txnId || '').toLowerCase();
-    const pSnippet = (p.snippet || '').toLowerCase();
-    return (pUtr.includes(cleanUtr) || pTxn.includes(cleanUtr) || pSnippet.includes(cleanUtr)) &&
+    return (pUtr === cleanUtr || pTxn === cleanUtr) &&
            Math.abs(p.amount - order.amount) < 0.01 &&
            !watcher.isPaymentClaimed(p);
   });
@@ -606,7 +613,7 @@ app.post('/api/v1/checkout/verify-utr', async (req, res) => {
   return res.json({
     success: false,
     verified: false,
-    message: 'UTR not yet detected in inbox. Please allow a few seconds for the bank email alert.'
+    message: 'UTR not found yet. Wait 1-2 minutes for the bank SMS, then try again.'
   });
 });
 
