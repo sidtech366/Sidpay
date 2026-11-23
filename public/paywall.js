@@ -78,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
       orderData = data;
       renderOrder();
+      applyClaimState(data.order);
 
       if (data.order.status === 'PAID') {
         triggerSuccess(data.order.paymentDetails || {}, data.order);
@@ -92,6 +93,30 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     setupEvents();
+  }
+
+  // Customer asked for manual checking: show review / rejected state
+  function applyClaimState(order) {
+    const claim = order && order.claim;
+    if (!claim || order.status === 'PAID') return false;
+    const statusEl = document.querySelector('.status');
+    const desc = document.getElementById('radarDesc');
+    statusEl.classList.remove('expired', 'review', 'rejected');
+    if (claim.status === 'PENDING_REVIEW') {
+      statusEl.classList.add('review');
+      radarTitle.textContent = 'Payment sent for checking';
+      desc.textContent = `SidTech 366 is checking UPI Ref No ${claim.utr} in the bank account. You can close this page and open the same link later to see the result.`;
+      paywallTimer.textContent = '';
+      return true;
+    }
+    if (claim.status === 'REJECTED') {
+      statusEl.classList.add('rejected');
+      radarTitle.textContent = 'We could not confirm this payment';
+      desc.textContent = `${claim.note || 'Payment not found in our bank account'}. Check the UPI Ref No and send it again, or call 70694 92135.`;
+      paywallTimer.textContent = '';
+      return true;
+    }
+    return false;
   }
 
   function showInvalid(title, text) {
@@ -256,13 +281,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const res = await fetch(`/api/v1/checkout/verify-utr?_t=${Date.now()}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
-          body: JSON.stringify({ orderId, utr })
+          body: JSON.stringify({ orderId, utr, payerName: (document.getElementById('payerNameInput') || {}).value || '' })
         });
         const data = await res.json();
         if (data.verified && data.order) {
           triggerSuccess(data.order.paymentDetails || {}, data.order);
+        } else if (data.underReview && data.order) {
+          applyClaimState(data.order);
+          const details = document.querySelector('details.utr');
+          if (details) details.open = false;
+          showToast('Request sent for checking');
         } else {
-          showToast(data.message || 'UTR not verified yet.');
+          showToast(data.message || data.error || 'Could not check this UPI Ref No.');
         }
       } catch (e) {
         showToast('Could not check right now. Try again in a moment.');
@@ -363,8 +393,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         triggerSuccess(data.order.paymentDetails || {}, data.order);
         if (isManual) showToast('Payment confirmed');
-      } else if (isManual) {
-        showToast('Not confirmed yet. Bank confirmation can take a minute.');
+      } else {
+        if (data.order) applyClaimState(data.order);
+        if (isManual) showToast('Not confirmed yet. Bank confirmation can take a minute.');
       }
     } catch (e) {
       if (isManual) showToast('Could not reach the server. Check your internet.');
@@ -374,6 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function startTimers() {
     const tick = () => {
       if (isVerified) return clearInterval(countdownTimer);
+      if (document.querySelector('.status').matches('.review, .rejected')) return;
       const left = Math.max(0, Math.floor((orderCreatedAt + PAYMENT_WINDOW_MS - Date.now()) / 1000));
       const mins = Math.floor(left / 60);
       const secs = left % 60;

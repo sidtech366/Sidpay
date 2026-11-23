@@ -214,6 +214,8 @@ a { color: var(--blue); }
 }
 
 .status.expired .status-dot { animation: none; background: #B42318; }
+.status.review .status-dot { animation: none; background: #B54708; }
+.status.rejected .status-dot { animation: none; background: #B42318; }
 
 /* ---------- Manual UTR ---------- */
 
@@ -231,8 +233,11 @@ a { color: var(--blue); }
 .utr[open] summary::after { content: '−'; }
 
 .utr-help { font-size: 13.5px; color: var(--muted); margin-bottom: 10px; }
-.utr-row { display: flex; gap: 8px; padding-bottom: 14px; }
-.utr-row input {
+.utr-form { display: grid; gap: 6px; padding-bottom: 16px; }
+.utr-form .btn-primary { margin-top: 8px; }
+.field-label { font-size: 13.5px; font-weight: 500; }
+.field-label .optional { color: var(--muted); font-weight: 400; }
+.utr-form input {
   flex: 1; min-width: 0;
   font: inherit; font-size: 16px;
   font-variant-numeric: tabular-nums;
@@ -241,7 +246,7 @@ a { color: var(--blue); }
   border-radius: 12px;
   color: var(--ink);
 }
-.utr-row input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(29, 63, 175, 0.15); }
+.utr-form input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(29, 63, 175, 0.15); }
 
 /* ---------- Invalid link ---------- */
 
@@ -346,7 +351,6 @@ a { color: var(--blue); }
 @media (max-width: 360px) {
   .amount { font-size: 44px; }
   .app-name { font-size: 11.5px; }
-  .utr-row { flex-direction: column; }
 }
 
 @media print {

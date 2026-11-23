@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex">
+  <title>Payment requests | SidPay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/paywall.css">
+  <style>
+    .page { max-width: 640px; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .top h1 { font-size: 22px; font-weight: 600; }
+    .top a { font-size: 14px; }
+    .hint { font-size: 14px; color: var(--muted); margin-bottom: 16px; }
+    .section-title { font-size: 15px; font-weight: 600; margin: 22px 0 10px; }
+    .req { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+    .req + .req { margin-top: 10px; }
+    .req-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+    .req-amt { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .req-when { font-size: 13px; color: var(--muted); white-space: nowrap; }
+    .req-note { color: var(--muted); font-size: 14.5px; margin-top: 2px; }
+    .req dl { margin-top: 12px; display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 14.5px; }
+    .req dt { color: var(--muted); }
+    .req dd { font-weight: 600; font-variant-numeric: tabular-nums; word-break: break-all; }
+    .utr-val { display: inline-flex; align-items: center; gap: 8px; }
+    .mini { font: inherit; font-size: 13px; font-weight: 500; color: var(--blue); background: none; border: 0; padding: 0; cursor: pointer; }
+    .req-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+    .btn-approve { background: var(--green); border-color: var(--green); }
+    .btn-approve:hover { background: #0B6346; }
+    .reject-box { margin-top: 10px; display: grid; gap: 8px; }
+    .reject-box input { font: inherit; font-size: 15px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
+    .empty { text-align: center; color: var(--muted); padding: 28px 16px; background: var(--paper); border: 1px dashed var(--line); border-radius: 16px; }
+    .done-row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+    .done-row .tag { font-weight: 600; }
+    .tag.ok { color: var(--green); }
+    .tag.no { color: #B42318; }
+    .login { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: grid; gap: 8px; }
+    .login input { font: inherit; font-size: 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <div class="top">
+      <h1>Payment requests</h1>
+      <a href="/" id="logoutLink">Dashboard</a>
+    </div>
+
+    <section id="loginBox" class="login hidden">
+      <p>Sign in to review payment requests.</p>
+      <label class="field-label" for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" value="sidtech366@gmail.com">
+      <label class="field-label" for="pass">Password</label>
+      <input id="pass" type="password" autocomplete="current-password">
+      <button class="btn-primary" id="loginBtn" type="button">Sign in</button>
+    </section>
+
+    <section id="app" class="hidden">
+      <p class="hint">A customer sends a request when the page did not confirm their payment by itself. Before you approve, open your bank or PhonePe Business app and check that this exact amount with this UPI Ref No has arrived.</p>
+      <div id="pendingList"></div>
+      <h2 class="section-title">Recently reviewed</h2>
+      <div id="reviewedList"></div>
+    </section>
+  </main>
+  <div class="toast-box" id="toastBox" aria-live="polite"></div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const inr = (n) => '₹' + Number(n || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const when = (d) => d ? new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+  const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  let token = localStorage.getItem('sidpay_token');
+
+  function toast(msg) {
+    const t = document.createElement('div'); t.className = 'toast'; t.textContent = msg;
+    $('toastBox').appendChild(t); setTimeout(() => t.remove(), 3000);
+  }
+
+  async function api(path, opts = {}) {
+    const res = await fetch(path, Object.assign({}, opts, {
+      headers: Object.assign({ 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, opts.headers || {})
+    }));
+    if (res.status === 401) { showLogin(); throw new Error('login'); }
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Request failed');
+    return data;
+  }
+
+  function showLogin() {
+    localStorage.removeItem('sidpay_token'); token = null;
+    $('app').classList.add('hidden'); $('loginBox').classList.remove('hidden');
+  }
+
+  $('loginBtn').addEventListener('click', async () => {
+    try {
+      const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: $('email').value.trim(), password: $('pass').value }) });
+      const data = await res.json();
+      if (!data.token) return toast(data.error || 'Wrong email or password');
+      token = data.token; localStorage.setItem('sidpay_token', token);
+      localStorage.setItem('sidpay_merchant', JSON.stringify(data.merchant));
+      start();
+    } catch (e) { toast('Could not sign in'); }
+  });
+
+  function renderPending(list) {
+    const box = $('pendingList');
+    if (!list.length) {
+      box.innerHTML = '<div class="empty">No requests waiting. New ones appear here by themselves.</div>';
+      return;
+    }
+    box.innerHTML = list.map((o) => `
+      <article class="req" data-id="${esc(o.orderId)}">
+        <div class="req-head">
+          <p class="req-amt">${inr(o.amount)}</p>
+          <p class="req-when">${esc(when(o.claim.submittedAt))}</p>
+        </div>
+        <p class="req-note">${esc(o.note || '')}</p>
+        <dl>
+          <dt>UPI Ref No</dt><dd><span class="utr-val">${esc(o.claim.utr)} <button class="mini" data-copy="${esc(o.claim.utr)}" type="button">Copy</button></span></dd>
+          <dt>Paid by</dt><dd>${esc(o.claim.payerName || 'Not given')}</dd>
+          <dt>Order</dt><dd>${esc(o.orderId)}</dd>
+          <dt>Order created</dt><dd>${esc(when(o.createdAt))}</dd>
+        </dl>
+        <div class="req-actions">
+          <button class="btn-primary btn-approve" data-approve type="button">Approve payment</button>
+          <button class="btn-ghost" data-reject-open type="button">Reject</button>
+        </div>
+        <div class="reject-box hidden">
+          <label class="field-label">Reason shown to the customer</label>
+          <input type="text" maxlength="140" value="Payment not found in our bank account">
+          <button class="btn-ghost" data-reject type="button">Confirm reject</button>
+        </div>
+      </article>`).join('');
+  }
+
+  function renderReviewed(list) {
+    const box = $('reviewedList');
+    if (!list.length) { box.innerHTML = '<p class="hint">Nothing reviewed yet.</p>'; return; }
+    box.innerHTML = list.map((o) => {
+      const ok = o.status === 'PAID';
+      return `<div class="done-row"><span>${inr(o.amount)}, UTR ${esc(o.claim.utr)}<br><span class="hint">${esc(o.orderId)}</span></span>
+        <span class="tag ${ok ? 'ok' : 'no'}">${ok ? 'Approved' : 'Rejected'}</span></div>`;
+    }).join('');
+  }
+
+  async function load() {
+    try {
+      const data = await api('/api/merchant/claims');
+      renderPending(data.pending || []);
+      renderReviewed(data.reviewed || []);
+      document.title = (data.pending && data.pending.length ? `(${data.pending.length}) ` : '') + 'Payment requests | SidPay';
+    } catch (e) { if (e.message !== 'login') toast(e.message); }
+  }
+
+  $('pendingList').addEventListener('click', async (e) => {
+    const card = e.target.closest('.req'); if (!card) return;
+    const id = card.dataset.id;
+    if (e.target.dataset.copy) {
+      navigator.clipboard.writeText(e.target.dataset.copy).then(() => toast('UPI Ref No copied'));
+    } else if (e.target.hasAttribute('data-reject-open')) {
+      card.querySelector('.reject-box').classList.toggle('hidden');
+    } else if (e.target.hasAttribute('data-approve')) {
+      e.target.disabled = true; e.target.textContent = 'Approving…';
+      try { await api(`/api/merchant/claims/${encodeURIComponent(id)}/approve`, { method: 'POST' }); toast('Approved. Customer now sees the receipt.'); }
+      catch (err) { toast(err.message); }
+      load();
+    } else if (e.target.hasAttribute('data-reject')) {
+      const note = card.querySelector('.reject-box input').value;
+      try { await api(`/api/merchant/claims/${encodeURIComponent(id)}/reject`, { method: 'POST', body: JSON.stringify({ note }) }); toast('Rejected. Customer has been told.'); }
+      catch (err) { toast(err.message); }
+      load();
+    }
+  });
+
+  function start() {
+    $('loginBox').classList.add('hidden'); $('app').classList.remove('hidden');
+    load();
+    setInterval(load, 15000);
+    try {
+      const es = new EventSource('/api/merchant/events?token=' + encodeURIComponent(token));
+      es.onmessage = (ev) => {
+        try {
+          const p = JSON.parse(ev.data);
+          if (p.type === 'PAYMENT_CLAIM') { toast(`New request: ${inr(p.order.amount)}`); load(); }
+        } catch (err) {}
+      };
+    } catch (err) {}
+  }
+
+  if (token) start(); else showLogin();
+})();
+</script>
+</body>
+</html>

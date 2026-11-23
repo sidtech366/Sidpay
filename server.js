@@ -610,11 +610,9 @@ app.post('/api/v1/checkout/verify-utr', async (req, res) => {
     });
   }
 
-  return res.json({
-    success: false,
-    verified: false,
-    message: 'UTR not found yet. Wait 1-2 minutes for the bank SMS, then try again.'
-  });
+  // Not found automatically: send it to the merchant for manual checking
+  const result = submitClaim(order, cleanUtr, req.body.payerName);
+  return res.status(result.code).json(result.body);
 });
 
 
@@ -719,6 +717,105 @@ app.get('/api/v1/sms-test', async (req, res) => {
       ? `Order ${matched.orderId} auto-verified as PAID`
       : `No PENDING order of exactly ₹${amount.toFixed(2)} created in the last 20 minutes`
   });
+});
+
+
+// ==============================================================
+// MANUAL REVIEW: customer says "I have paid", merchant approves/rejects
+// ==============================================================
+function utrAlreadyUsed(utr, exceptOrderId) {
+  return Object.values(store.data.orders).some(o => o.orderId !== exceptOrderId && (
+    (o.status === 'PAID' && o.paymentDetails && String(o.paymentDetails.utr || '').toLowerCase() === utr) ||
+    (o.claim && o.claim.status === 'PENDING_REVIEW' && String(o.claim.utr || '').toLowerCase() === utr)
+  ));
+}
+
+function submitClaim(order, cleanUtr, payerName) {
+  if (order.status === 'PAID') {
+    return { code: 200, body: { success: true, verified: true, order } };
+  }
+  if (!/^\d{12}$/.test(cleanUtr)) {
+    return { code: 400, body: { error: 'Enter the 12-digit UPI Ref No (UTR)' } };
+  }
+  if (utrAlreadyUsed(cleanUtr, order.orderId)) {
+    return { code: 409, body: { success: false, verified: false, message: 'This UPI Ref No is already used for another payment. Please check and try again.' } };
+  }
+  const claim = {
+    utr: cleanUtr,
+    payerName: String(payerName || '').trim().slice(0, 60),
+    submittedAt: new Date(),
+    status: 'PENDING_REVIEW'
+  };
+  const updated = store.updateOrder(order.orderId, { claim });
+  console.log(`[CLAIM] Order ${order.orderId} ₹${order.amount}: customer says paid, UTR ${cleanUtr}`);
+  const watcher = watcherManager.get(order.merchantId);
+  if (watcher) watcher.notifyMerchant({ type: 'PAYMENT_CLAIM', order: updated });
+  return {
+    code: 200,
+    body: {
+      success: true,
+      verified: false,
+      underReview: true,
+      order: updated,
+      message: 'Request sent. SidTech 366 will check the bank account and confirm your payment.'
+    }
+  };
+}
+
+// Merchant: list orders waiting for review (and recently reviewed)
+app.get('/api/merchant/claims', requireMerchant, (req, res) => {
+  const orders = store.getOrdersByMerchant(req.merchantId).filter(o => o.claim && o.claim.status);
+  orders.sort((a, b) => new Date(b.claim.submittedAt) - new Date(a.claim.submittedAt));
+  res.json({
+    success: true,
+    pending: orders.filter(o => o.claim.status === 'PENDING_REVIEW' && o.status !== 'PAID'),
+    reviewed: orders.filter(o => o.claim.status !== 'PENDING_REVIEW' || o.status === 'PAID').slice(0, 30)
+  });
+});
+
+app.post('/api/merchant/claims/:orderId/approve', requireMerchant, async (req, res) => {
+  const order = store.getOrder(req.params.orderId);
+  if (!order || order.merchantId !== req.merchantId) return res.status(404).json({ error: 'Order not found' });
+  if (order.status === 'PAID') return res.json({ success: true, order });
+  if (!order.claim || !order.claim.utr) return res.status(400).json({ error: 'No payment request on this order' });
+
+  const merchant = store.getMerchantById(req.merchantId);
+  const watcher = watcherManager.getOrCreate(merchant);
+  const payment = {
+    uid: `MANUAL_${order.claim.utr}`,
+    amount: order.amount,
+    senderName: order.claim.payerName || 'UPI Customer',
+    utr: order.claim.utr,
+    txnId: `TXN-${order.claim.utr}`,
+    date: new Date(),
+    source: 'Approved manually by merchant'
+  };
+  if (watcher && watcher.isPaymentClaimed(payment)) {
+    return res.status(409).json({ error: 'This UTR is already used for another order' });
+  }
+  store.updateOrder(order.orderId, { claim: Object.assign({}, order.claim, { status: 'APPROVED', reviewedAt: new Date() }) });
+  if (watcher) {
+    await watcher.executeOrderMatch(order, payment, 'MANUAL_APPROVAL');
+  } else {
+    store.updateOrder(order.orderId, { status: 'PAID', verifiedAt: new Date().toISOString(), paymentDetails: payment });
+  }
+  console.log(`[CLAIM] Order ${order.orderId} APPROVED by merchant (UTR ${order.claim.utr})`);
+  res.json({ success: true, order: store.getOrder(order.orderId) });
+});
+
+app.post('/api/merchant/claims/:orderId/reject', requireMerchant, (req, res) => {
+  const order = store.getOrder(req.params.orderId);
+  if (!order || order.merchantId !== req.merchantId) return res.status(404).json({ error: 'Order not found' });
+  if (order.status === 'PAID') return res.status(400).json({ error: 'Order is already paid' });
+  if (!order.claim) return res.status(400).json({ error: 'No payment request on this order' });
+  const note = String((req.body && req.body.note) || 'Payment not found in our bank account').slice(0, 140);
+  const updated = store.updateOrder(order.orderId, { claim: Object.assign({}, order.claim, { status: 'REJECTED', reviewedAt: new Date(), note }) });
+  console.log(`[CLAIM] Order ${order.orderId} REJECTED: ${note}`);
+  res.json({ success: true, order: updated });
+});
+
+app.get('/claims', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'claims.html'));
 });
 
 // Simulation endpoint to test concurrent payments

@@ -68,11 +68,13 @@
       <details class="utr">
         <summary id="utrToggle">Paid, but this page has not updated?</summary>
         <div id="utrDrawer">
-          <p class="utr-help">Enter the 12-digit UPI Ref No (UTR) from your payment app or bank SMS.</p>
-          <div class="utr-row">
-            <label class="sr-only" for="manualUtrInput">UPI reference number</label>
-            <input type="text" id="manualUtrInput" inputmode="numeric" autocomplete="off" maxlength="22" placeholder="e.g. 632715784568">
-            <button type="button" class="btn-primary" id="submitUtrBtn">Check payment</button>
+          <p class="utr-help">Enter the 12-digit UPI Ref No (UTR) from your payment app. If we can't match it automatically, it goes to SidTech 366 to check and approve.</p>
+          <div class="utr-form">
+            <label class="field-label" for="manualUtrInput">UPI Ref No (UTR)</label>
+            <input type="text" id="manualUtrInput" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="e.g. 632715784568">
+            <label class="field-label" for="payerNameInput">Your name <span class="optional">(optional)</span></label>
+            <input type="text" id="payerNameInput" autocomplete="name" maxlength="60" placeholder="Name of the person who paid">
+            <button type="button" class="btn-primary btn-block" id="submitUtrBtn">Check payment</button>
           </div>
         </div>
       </details>

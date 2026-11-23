@@ -34,7 +34,19 @@ const OrderSchema = new mongoose.Schema({
     utr: String,
     txnId: String,
     rawText: String,
-    timestamp: Date
+    timestamp: Date,
+    senderName: String,
+    source: String,
+    date: Date
+  },
+  // Customer "I have paid" request, reviewed manually by the merchant
+  claim: {
+    utr: String,
+    payerName: String,
+    submittedAt: Date,
+    status: { type: String, enum: ['PENDING_REVIEW', 'APPROVED', 'REJECTED'] },
+    reviewedAt: Date,
+    note: String
   }
 }, { timestamps: true });
 
