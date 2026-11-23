@@ -682,6 +682,8 @@ app.post('/api/v1/sms-webhook', async (req, res) => {
 async function handleNotifyWebhook(req, res) {
   const secret = process.env.SMS_WEBHOOK_SECRET || '';
   const q = Object.assign({}, req.query || {}, (req.body && typeof req.body === 'object') ? req.body : {});
+  // Simple MacroDroid setup: plain-text body = [notification]
+  if (typeof req.body === 'string' && req.body.trim()) q.text = req.body;
   const given = String(req.headers['x-sms-secret'] || q.secret || '');
   if (secret.length < 16) {
     return res.status(503).json({ error: 'Webhook disabled. Set SMS_WEBHOOK_SECRET (min 16 chars)' });
@@ -696,7 +698,9 @@ async function handleNotifyWebhook(req, res) {
   const text = q.text || q.notification || q.message || '';
   console.log(`[NOTIFY] From ${app}: ${title} | ${String(text).slice(0, 80)}`);
 
-  if (!isTrustedApp(app)) {
+  // If the phone did not send the app name, rely on the MacroDroid trigger
+  // (which is limited to PhonePe Business). If it did send one, it must be allowed.
+  if (app && !isTrustedApp(app)) {
     console.log(`[NOTIFY] Ignored: app "${app}" not in NOTIFY_ALLOWED_APPS`);
     return res.json({ success: true, ignored: true, reason: 'App not allowed' });
   }
@@ -717,7 +721,7 @@ async function handleNotifyWebhook(req, res) {
   return res.json({ success: true, accepted: true, amount: payment.amount, txnId: payment.txnId, matchedOrder: matched ? matched.orderId : null });
 }
 app.get('/api/v1/notify-webhook', handleNotifyWebhook);
-app.post('/api/v1/notify-webhook', handleNotifyWebhook);
+app.post('/api/v1/notify-webhook', express.text({ type: ['text/*', 'application/octet-stream'], limit: '4kb' }), handleNotifyWebhook);
 
 // ==============================================================
 // SMS TEST (browser-friendly): injects a FAKE Bank of Baroda credit SMS
