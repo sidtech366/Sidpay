@@ -11,6 +11,7 @@ const qrHelper = require('./services/qrHelper');
 const watcherManager = require('./services/concurrencyWatcher');
 const crypto = require('crypto');
 const { parseBankSms, isTrustedSmsSender } = require('./services/smsParser');
+const { parsePhonePeNotification, isTrustedApp } = require('./services/notifyParser');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -670,6 +671,53 @@ app.post('/api/v1/sms-webhook', async (req, res) => {
   return res.json({ success: true, accepted: true, amount: payment.amount, utr: payment.utr });
 });
 
+
+
+// ==============================================================
+// PHONEPE BUSINESS NOTIFICATION WEBHOOK
+// MacroDroid on the merchant phone: Notification Received (PhonePe Business)
+//   -> HTTP Request to /api/v1/notify-webhook?secret=...&app=[app_name]&title=[notification_title]&text=[notification]
+// Accepts GET or POST; values from query string, form body or JSON body.
+// ==============================================================
+async function handleNotifyWebhook(req, res) {
+  const secret = process.env.SMS_WEBHOOK_SECRET || '';
+  const q = Object.assign({}, req.query || {}, (req.body && typeof req.body === 'object') ? req.body : {});
+  const given = String(req.headers['x-sms-secret'] || q.secret || '');
+  if (secret.length < 16) {
+    return res.status(503).json({ error: 'Webhook disabled. Set SMS_WEBHOOK_SECRET (min 16 chars)' });
+  }
+  if (!safeEqual(given, secret) && !safeEqual(given.replace(/ /g, '+'), secret)) {
+    console.log('[NOTIFY] Rejected: wrong or missing secret');
+    return res.status(401).json({ error: 'Invalid secret' });
+  }
+
+  const app = q.app || q.app_name || q.package || '';
+  const title = q.title || '';
+  const text = q.text || q.notification || q.message || '';
+  console.log(`[NOTIFY] From ${app}: ${title} | ${String(text).slice(0, 80)}`);
+
+  if (!isTrustedApp(app)) {
+    console.log(`[NOTIFY] Ignored: app "${app}" not in NOTIFY_ALLOWED_APPS`);
+    return res.json({ success: true, ignored: true, reason: 'App not allowed' });
+  }
+  const payment = parsePhonePeNotification(title, text, q.time || q.timestamp);
+  if (!payment) {
+    console.log('[NOTIFY] Ignored: not a "received" payment notification');
+    return res.json({ success: true, ignored: true, reason: 'Not a received-payment notification' });
+  }
+
+  const merchant = store.getMerchantById(q.merchantId || 'merch_default');
+  const watcher = merchant && watcherManager.getOrCreate(merchant);
+  if (!watcher) return res.status(500).json({ error: 'Watcher not available' });
+
+  console.log(`[NOTIFY] Received ₹${payment.amount} from ${payment.senderName} (txn ${payment.txnId})`);
+  await watcher.handleIncomingPayment(payment);
+  const matched = store.getOrdersByMerchant(merchant.id)
+    .find(o => o.status === 'PAID' && o.paymentDetails && o.paymentDetails.txnId === payment.txnId);
+  return res.json({ success: true, accepted: true, amount: payment.amount, txnId: payment.txnId, matchedOrder: matched ? matched.orderId : null });
+}
+app.get('/api/v1/notify-webhook', handleNotifyWebhook);
+app.post('/api/v1/notify-webhook', handleNotifyWebhook);
 
 // ==============================================================
 // SMS TEST (browser-friendly): injects a FAKE Bank of Baroda credit SMS

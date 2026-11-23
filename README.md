@@ -310,6 +310,20 @@ Contributions are welcomed! Follow these steps:
 
 ---
 
+## 🔔 PhonePe Business notification verification (recommended for merchant QR)
+
+With a PhonePe Business QR, bank credit SMS can be late or combined (settlement). The PhonePe Business app shows an instant notification instead:
+"You've received Rs 1 from Vikas Mishra via PhonePe for txn T26112317...".
+
+On the merchant's Android phone, in **MacroDroid**:
+1. Trigger: Device Events → Notification → Notification Received → app **PhonePe Business**, text contains `received`
+2. Action: HTTP Request → GET `https://YOUR_SERVER/api/v1/notify-webhook` with query parameters
+   `secret` = SMS_WEBHOOK_SECRET, `app` = `[app_name]`, `title` = `[notification_title]`, `text` = `[notification]`
+
+Only notifications from apps in `NOTIFY_ALLOWED_APPS` (default `PhonePe Business`) are used; "sent/paid" notifications are ignored and each txn is used once.
+
+---
+
 ## 📱 SMS Verification (Bank of Baroda / Jio Payments Bank)
 
 For banks that do not send credit alert emails, SidPay verifies payments from the bank's **credit SMS**.
