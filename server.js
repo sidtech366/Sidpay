@@ -909,6 +909,12 @@ app.get(['/pay/:orderId', '/checkout/:orderId', '/test/:orderId', '/test'], (req
   res.sendFile(path.join(__dirname, 'public', 'paywall.html'));
 });
 
+// Unknown API address: say so (helps spot a typo in MacroDroid / SMS app URL)
+app.use('/api', (req, res) => {
+  console.log(`[API] Unknown address: ${req.method} ${req.path}`);
+  res.status(404).json({ error: `Unknown API address ${req.path}. Check the URL.` });
+});
+
 // Fallback to Main Dashboard / Landing SPA
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
