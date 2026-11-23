@@ -47,7 +47,70 @@ if (defaultMerchant) {
 // ==============================================================
 
 // Register new merchant
+
+// ==============================================================
+// SECURITY: merchant session tokens (HMAC signed)
+// ==============================================================
+const SESSION_SECRET = process.env.SESSION_SECRET
+  || ((process.env.DEFAULT_API_KEY || process.env.MERCHANT_PASSWORD)
+      ? require('crypto').createHash('sha256').update(`sidpay|${process.env.DEFAULT_API_KEY || ''}|${process.env.MERCHANT_PASSWORD || ''}|${process.env.MONGODB_URI || ''}`).digest('hex')
+      : require('crypto').randomBytes(32).toString('hex'));
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+function signSession(merchantId) {
+  const c = require('crypto');
+  const payload = `${merchantId}.${Date.now() + SESSION_TTL_MS}`;
+  const sig = c.createHmac('sha256', SESSION_SECRET).update(payload).digest('hex');
+  return `${Buffer.from(payload).toString('base64url')}.${sig}`;
+}
+
+function verifySession(token) {
+  try {
+    const c = require('crypto');
+    const [b64, sig] = String(token || '').split('.');
+    if (!b64 || !sig) return null;
+    const payload = Buffer.from(b64, 'base64url').toString();
+    const expected = c.createHmac('sha256', SESSION_SECRET).update(payload).digest('hex');
+    if (sig.length !== expected.length || !c.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
+    const dot = payload.lastIndexOf('.');
+    const merchantId = payload.slice(0, dot);
+    const exp = Number(payload.slice(dot + 1));
+    if (!merchantId || !(exp > Date.now())) return null;
+    return merchantId;
+  } catch (e) {
+    return null;
+  }
+}
+
+function requireMerchant(req, res, next) {
+  const h = req.headers.authorization || '';
+  const token = (h.startsWith('Bearer ') ? h.slice(7) : '') || req.headers['x-session-token'] || req.query.token;
+  const merchantId = verifySession(token);
+  if (!merchantId || !store.getMerchantById(merchantId)) {
+    return res.status(401).json({ error: 'Login required' });
+  }
+  req.merchantId = merchantId;
+  req.headers['x-merchant-id'] = merchantId; // never trust client-sent merchant id
+  next();
+}
+
+// Never send password / Gmail app password to the browser
+function publicMerchant(m) {
+  if (!m) return m;
+  const { password, gmailAppPass, ...safe } = m;
+  return safe;
+}
+
+function passwordMatches(given, stored) {
+  const a = Buffer.from(String(given || ''));
+  const b = Buffer.from(String(stored || ''));
+  return a.length > 0 && a.length === b.length && require('crypto').timingSafeEqual(a, b);
+}
+
 app.post('/api/auth/register', (req, res) => {
+  if (process.env.ALLOW_REGISTRATION !== 'true') {
+    return res.status(403).json({ error: 'New registrations are disabled' });
+  }
   const { name, email, password, businessName } = req.body;
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
@@ -67,7 +130,8 @@ app.post('/api/auth/register', (req, res) => {
 
   res.json({
     success: true,
-    merchant
+    merchant: publicMerchant(merchant),
+    token: signSession(merchant.id)
   });
 });
 
@@ -79,7 +143,7 @@ app.post('/api/auth/login', (req, res) => {
   }
 
   const merchant = store.getMerchantByEmail(email);
-  if (!merchant || merchant.password !== password) {
+  if (!merchant || !passwordMatches(password, merchant.password)) {
     return res.status(401).json({ error: 'Invalid email or password' });
   }
 
@@ -90,18 +154,18 @@ app.post('/api/auth/login', (req, res) => {
 
   res.json({
     success: true,
-    merchant
+    merchant: publicMerchant(merchant),
+    token: signSession(merchant.id)
   });
 });
 
 // Get current merchant profile
-app.get('/api/auth/me', (req, res) => {
-  const merchantId = req.headers['x-merchant-id'] || 'merch_default';
-  const merchant = store.getMerchantById(merchantId);
+app.get('/api/auth/me', requireMerchant, (req, res) => {
+  const merchant = store.getMerchantById(req.merchantId);
   if (!merchant) {
     return res.status(404).json({ error: 'Merchant not found' });
   }
-  res.json({ success: true, merchant });
+  res.json({ success: true, merchant: publicMerchant(merchant) });
 });
 
 // ==============================================================
@@ -109,7 +173,7 @@ app.get('/api/auth/me', (req, res) => {
 // ==============================================================
 
 // Upload and Auto-Decode FamPay / UPI QR Image
-app.post('/api/merchant/upload-qr', upload.single('qrImage'), async (req, res) => {
+app.post('/api/merchant/upload-qr', requireMerchant, upload.single('qrImage'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: 'No image uploaded' });
   }
@@ -130,7 +194,7 @@ app.post('/api/merchant/upload-qr', upload.single('qrImage'), async (req, res) =
 });
 
 // Test Gmail IMAP Connection Live
-app.post('/api/merchant/test-email', async (req, res) => {
+app.post('/api/merchant/test-email', requireMerchant, async (req, res) => {
   const { gmailUser, gmailAppPass } = req.body;
   if (!gmailUser || !gmailAppPass) {
     return res.status(400).json({ error: 'Gmail address and App Password required' });
@@ -168,9 +232,9 @@ app.post('/api/merchant/test-email', async (req, res) => {
 });
 
 // Complete Onboarding
-app.post('/api/merchant/complete-onboarding', async (req, res) => {
-  const { merchantId, businessName, upiId, qrImagePath, gmailUser, gmailAppPass } = req.body;
-  
+app.post('/api/merchant/complete-onboarding', requireMerchant, async (req, res) => {
+  const { businessName, upiId, qrImagePath, gmailUser, gmailAppPass } = req.body;
+  const merchantId = req.merchantId;
   const merchant = store.getMerchantById(merchantId);
   if (!merchant) {
     return res.status(404).json({ error: 'Merchant not found' });
@@ -190,7 +254,7 @@ app.post('/api/merchant/complete-onboarding', async (req, res) => {
 
   res.json({
     success: true,
-    merchant: updated
+    merchant: publicMerchant(updated)
   });
 });
 
@@ -198,7 +262,7 @@ app.post('/api/merchant/complete-onboarding', async (req, res) => {
 // 3. MERCHANT DASHBOARD ENDPOINTS
 // ==============================================================
 
-app.get('/api/merchant/dashboard', (req, res) => {
+app.get('/api/merchant/dashboard', requireMerchant, (req, res) => {
   const merchantId = req.headers['x-merchant-id'] || 'merch_default';
   const merchant = store.getMerchantById(merchantId);
   if (!merchant) return res.status(404).json({ error: 'Merchant not found' });
@@ -236,7 +300,7 @@ app.get('/api/merchant/dashboard', (req, res) => {
 });
 
 // Create Hosted Paywall Link
-app.post('/api/merchant/create-paywall-link', async (req, res) => {
+app.post('/api/merchant/create-paywall-link', requireMerchant, async (req, res) => {
   const merchantId = req.headers['x-merchant-id'] || 'merch_default';
   const { amount, customerName, customerEmail, note } = req.body;
 
@@ -286,7 +350,7 @@ app.post('/api/merchant/create-paywall-link', async (req, res) => {
 });
 
 // Regenerate API Key
-app.post('/api/merchant/regenerate-api-key', (req, res) => {
+app.post('/api/merchant/regenerate-api-key', requireMerchant, (req, res) => {
   const merchantId = req.headers['x-merchant-id'] || 'merch_default';
   const crypto = require('crypto');
   const newKey = `sid_live_${crypto.randomBytes(16).toString('hex')}`;
@@ -296,8 +360,8 @@ app.post('/api/merchant/regenerate-api-key', (req, res) => {
 });
 
 // SSE Stream for Merchant Dashboard
-app.get('/api/merchant/events', (req, res) => {
-  const merchantId = req.query.merchantId || 'merch_default';
+app.get('/api/merchant/events', requireMerchant, (req, res) => {
+  const merchantId = req.merchantId;
   const merchant = store.getMerchantById(merchantId);
   if (!merchant) return res.status(404).end();
 
@@ -599,6 +663,52 @@ app.post('/api/v1/sms-webhook', async (req, res) => {
   await watcher.handleIncomingPayment(payment);
 
   return res.json({ success: true, accepted: true, amount: payment.amount, utr: payment.utr });
+});
+
+
+// ==============================================================
+// SMS TEST (browser-friendly): injects a FAKE Bank of Baroda credit SMS
+// GET /api/v1/sms-test?secret=<SMS_WEBHOOK_SECRET>&amount=1.00
+// Same parser + matching engine as real SMS. Marked as TEST in the order.
+// ==============================================================
+app.get('/api/v1/sms-test', async (req, res) => {
+  const secret = process.env.SMS_WEBHOOK_SECRET || '';
+  const given = String(req.query.secret || '');
+  if (secret.length < 16 || (!safeEqual(given, secret) && !safeEqual(given.replace(/ /g, '+'), secret))) {
+    return res.status(401).json({ error: 'Invalid secret' });
+  }
+  const amount = parseFloat(req.query.amount);
+  if (!(amount > 0)) return res.status(400).json({ error: 'amount required, e.g. &amount=1.00' });
+
+  const utr = String(Math.floor(100000000000 + Math.random() * 899999999999));
+  const last4 = process.env.SMS_ACCOUNT_LAST4 || '0000';
+  const now = new Date().toISOString().replace('T', ' ').slice(0, 19);
+  const smsText = `Dear BOB UPI User: Your account XXXXXX${last4} is credited with INR ${amount.toFixed(2)} on ${now} by UPI Ref No ${utr}; AvlBal: Rs1000.00 - BOB`;
+  const sender = 'JK-BOBSMS-S';
+
+  const payment = parseBankSms(sender, smsText, Date.now());
+  if (!payment) return res.status(500).json({ error: 'Parser rejected test SMS', smsText });
+  payment.source = 'TEST SMS (fake - no real money)';
+  payment.senderName = 'TEST';
+
+  const merchant = store.getMerchantById(req.query.merchantId || 'merch_default');
+  const watcher = merchant && watcherManager.getOrCreate(merchant);
+  if (!watcher) return res.status(500).json({ error: 'Watcher not available' });
+
+  console.log(`[SMS-TEST] Fake credit ₹${payment.amount} UTR ${utr}`);
+  await watcher.handleIncomingPayment(payment);
+
+  const matched = store.getOrdersByMerchant(merchant.id)
+    .find(o => o.status === 'PAID' && o.paymentDetails && o.paymentDetails.utr === utr);
+
+  return res.json({
+    success: true,
+    fakeSms: smsText,
+    matchedOrder: matched ? matched.orderId : null,
+    result: matched
+      ? `Order ${matched.orderId} auto-verified as PAID`
+      : `No PENDING order of exactly ₹${amount.toFixed(2)} created in the last 20 minutes`
+  });
 });
 
 // Simulation endpoint to test concurrent payments

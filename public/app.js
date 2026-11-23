@@ -2,6 +2,31 @@
  * Master Application Client Logic (SidPay Platform & Dashboard)
  */
 
+// SECURITY: attach the merchant session token to dashboard API calls
+(function () {
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = function (url, opts) {
+    opts = opts || {};
+    try {
+      const u = String(url);
+      if (u.startsWith('/api/merchant') || u.startsWith('/api/auth/me')) {
+        const t = localStorage.getItem('sidpay_token');
+        if (t) {
+          const h = new Headers(opts.headers || {});
+          h.set('Authorization', 'Bearer ' + t);
+          opts = Object.assign({}, opts, { headers: h });
+        }
+      }
+    } catch (e) {}
+    return originalFetch(url, opts).then((res) => {
+      if (res.status === 401 && String(url).startsWith('/api/merchant')) {
+        try { localStorage.removeItem('sidpay_token'); localStorage.removeItem('sidpay_merchant'); } catch (e) {}
+      }
+      return res;
+    });
+  };
+})();
+
 document.addEventListener('DOMContentLoaded', () => {
   // App State
   let currentMerchant = null;
@@ -242,6 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await res.json();
 
         if (data.success && data.merchant) {
+          if (data.token) localStorage.setItem('sidpay_token', data.token);
           handleAuthSuccess(data.merchant);
         } else {
           showToast(data.error || 'Invalid credentials');
@@ -268,6 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await res.json();
 
         if (data.success && data.merchant) {
+          if (data.token) localStorage.setItem('sidpay_token', data.token);
           showToast('Account created successfully!');
           handleAuthSuccess(data.merchant);
         } else {
@@ -313,6 +340,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function loadSavedSession() {
     const saved = localStorage.getItem('sidpay_merchant');
+    if (!localStorage.getItem('sidpay_token')) {
+      // No valid login: show landing / sign-in
+      localStorage.removeItem('sidpay_merchant');
+      return;
+    }
     if (saved) {
       try {
         currentMerchant = JSON.parse(saved);
@@ -566,6 +598,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     btnDashLogout.addEventListener('click', () => {
       localStorage.removeItem('sidpay_merchant');
+      localStorage.removeItem('sidpay_token');
       currentMerchant = null;
       updateNavState();
       showView('landing');
@@ -784,7 +817,7 @@ print("Checkout URL:", data['checkoutUrl'])`;
   function connectDashboardSSE(merchantId) {
     if (merchantSse) return;
     try {
-      merchantSse = new EventSource(`/api/merchant/events?merchantId=${merchantId}`);
+      merchantSse = new EventSource(`/api/merchant/events?token=${encodeURIComponent(localStorage.getItem('sidpay_token') || '')}`);
       merchantSse.onmessage = (e) => {
         try {
           const payload = JSON.parse(e.data);
