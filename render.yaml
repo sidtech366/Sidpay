@@ -1,0 +1,32 @@
+# One-click deploy on Render: https://render.com/deploy?repo=https://github.com/sidtech366/Sidpay
+services:
+  - type: web
+    name: sidpay
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm ci
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: PAYEE_NAME
+        value: SidTech 366
+      - key: BUSINESS_NAME
+        value: SidTech 366
+      - key: UPI_ID
+        sync: false          # aapka BoB UPI ID
+      - key: MONGODB_URI
+        sync: false          # MongoDB Atlas connection string
+      - key: MERCHANT_PASSWORD
+        sync: false          # dashboard login password
+      - key: SMS_WEBHOOK_SECRET
+        generateValue: true
+      - key: DEFAULT_API_KEY
+        generateValue: true
+      - key: SMS_ALLOWED_SENDERS
+        value: BOBSMS
+      - key: SMS_ACCOUNT_LAST4
+        sync: false
+      - key: ENABLE_SIMULATION
+        value: "false"

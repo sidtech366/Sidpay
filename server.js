@@ -565,7 +565,8 @@ app.post('/api/v1/sms-webhook', async (req, res) => {
     return res.status(503).json({ error: 'SMS webhook disabled. Set SMS_WEBHOOK_SECRET (min 16 chars) in .env' });
   }
   const given = req.headers['x-sms-secret'] || req.query.secret || (req.body && req.body.secret);
-  if (!safeEqual(given, secret)) {
+  // '+' in an unencoded URL query arrives as a space
+  if (!safeEqual(given, secret) && !safeEqual(String(given || '').replace(/ /g, '+'), secret)) {
     return res.status(401).json({ error: 'Invalid secret' });
   }
 

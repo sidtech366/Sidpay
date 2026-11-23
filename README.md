@@ -4,6 +4,8 @@
 
 **by SidTech 366**
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/sidtech366/Sidpay)
+
 **A production-ready, open-source, 0%-fee automated UPI payment gateway with dynamic QR generation, micro-paise anti-collision allocation, and sub-second bank alert auto-verification.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
