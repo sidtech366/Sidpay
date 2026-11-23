@@ -567,6 +567,7 @@ app.post('/api/v1/sms-webhook', async (req, res) => {
   const given = req.headers['x-sms-secret'] || req.query.secret || (req.body && req.body.secret);
   // '+' in an unencoded URL query arrives as a space
   if (!safeEqual(given, secret) && !safeEqual(String(given || '').replace(/ /g, '+'), secret)) {
+    console.log('[SMS] Rejected: wrong or missing secret');
     return res.status(401).json({ error: 'Invalid secret' });
   }
 
@@ -575,12 +576,15 @@ app.post('/api/v1/sms-webhook', async (req, res) => {
   const text = b.text || b.message || b.body || b.content || '';
   const receivedAt = b.receivedStamp || b.timestamp || b.sentStamp || b.date || null;
 
+  console.log(`[SMS] Received from ${sender}: ${String(text).slice(0, 60)}...`);
   if (!isTrustedSmsSender(sender)) {
+    console.log(`[SMS] Ignored: sender ${sender} not trusted`);
     return res.json({ success: true, ignored: true, reason: 'Sender not in trusted bank list' });
   }
 
   const payment = parseBankSms(sender, text, receivedAt);
   if (!payment) {
+    console.log('[SMS] Ignored: not a UPI credit SMS (debit/reversal/other)');
     return res.json({ success: true, ignored: true, reason: 'Not a UPI credit SMS' });
   }
 
