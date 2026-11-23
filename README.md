@@ -308,6 +308,24 @@ Contributions are welcomed! Follow these steps:
 
 ---
 
+## 📱 SMS Verification (Bank of Baroda / Jio Payments Bank)
+
+For banks that do not send credit alert emails, SidPay verifies payments from the bank's **credit SMS**.
+
+1. On the Android phone that has the bank SIM, install **SMS to URL Forwarder** (F-Droid, open-source).
+2. Add a rule: Sender `*`, URL `https://YOUR_SERVER/api/v1/sms-webhook?secret=YOUR_SMS_WEBHOOK_SECRET`
+3. Set in `.env`:
+
+```env
+SMS_WEBHOOK_SECRET="long-random-secret-min-16-chars"
+SMS_ALLOWED_SENDERS="BOBSMS"      # JK-BOBSMS-S / JX-BOBSMS-S -> BOBSMS
+SMS_ACCOUNT_LAST4="3050"          # optional, last digits shown in SMS
+```
+
+Only credit SMS from trusted bank headers are accepted. Debit SMS (`Dr. from A/C ...`), reversals and refunds are ignored. The phone must stay on and connected to the internet. Gmail settings are optional in SMS mode.
+
+---
+
 ## 🔒 SidPay Security Settings (required)
 
 Add these to your `.env`:

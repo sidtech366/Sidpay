@@ -8,7 +8,9 @@ class ConcurrencyWatcher {
   constructor(config) {
     this.merchantId = config.merchantId;
     this.user = config.user;
-    this.pass = config.pass.replace(/\s+/g, '');
+    this.pass = (config.pass || '').replace(/\s+/g, '');
+    // Email (Gmail IMAP) verification is optional: SMS-only merchants have no Gmail creds
+    this.emailEnabled = !!(this.user && this.pass);
     this.client = null;
     this.isConnected = false;
     this.isSyncing = false;
@@ -56,6 +58,10 @@ class ConcurrencyWatcher {
   }
 
   async start() {
+    if (!this.emailEnabled) {
+      console.log(`[Watcher:${this.merchantId}] Gmail not configured - running in SMS-only mode.`);
+      return;
+    }
     try {
       console.log(`[Watcher:${this.merchantId}] Connecting to IMAP for ${this.user}...`);
       this.client = this.createClient();
@@ -98,7 +104,7 @@ class ConcurrencyWatcher {
   }
 
   async syncAndProcess(limit = 3) {
-    if (this.isSyncing) return;
+    if (!this.emailEnabled || this.isSyncing) return;
     this.isSyncing = true;
 
     try {
@@ -347,6 +353,7 @@ class ConcurrencyWatcher {
   getStatus() {
     return {
       connected: this.isConnected,
+      mode: this.emailEnabled ? 'EMAIL+SMS' : 'SMS',
       user: this.user,
       lastSyncTime: this.lastSyncTime,
       activeQueuedOrders: store.getPendingOrdersByMerchant(this.merchantId).length,
@@ -370,7 +377,7 @@ class WatcherManager {
   }
 
   getOrCreate(merchant) {
-    if (!merchant || !merchant.gmailUser || !merchant.gmailAppPass) return null;
+    if (!merchant) return null;
     
     if (this.watchers.has(merchant.id)) {
       return this.watchers.get(merchant.id);

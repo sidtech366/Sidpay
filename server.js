@@ -9,6 +9,8 @@ const { ImapFlow } = require('imapflow');
 const store = require('./services/store');
 const qrHelper = require('./services/qrHelper');
 const watcherManager = require('./services/concurrencyWatcher');
+const crypto = require('crypto');
+const { parseBankSms, isTrustedSmsSender } = require('./services/smsParser');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -35,7 +37,8 @@ app.use('/uploads', express.static(uploadDir));
 
 // Initialize Watcher for default merchant on start
 const defaultMerchant = store.getMerchantById('merch_default');
-if (defaultMerchant && defaultMerchant.gmailUser && defaultMerchant.gmailAppPass) {
+if (defaultMerchant) {
+  // Starts Gmail watcher if configured, otherwise SMS-only mode
   watcherManager.getOrCreate(defaultMerchant);
 }
 
@@ -541,6 +544,56 @@ app.post('/api/v1/checkout/verify-utr', async (req, res) => {
     verified: false,
     message: 'UTR not yet detected in inbox. Please allow a few seconds for the bank email alert.'
   });
+});
+
+
+// ==============================================================
+// SMS WEBHOOK (Bank of Baroda / Jio Payments Bank credit SMS)
+// Android SMS-forwarder app on the bank-SIM phone POSTs every SMS here.
+// Auth: header "x-sms-secret: <SMS_WEBHOOK_SECRET>" or "?secret=<...>"
+// Body (any of): { from|sender, text|message|body, receivedStamp|timestamp, merchantId }
+// ==============================================================
+function safeEqual(a, b) {
+  const ba = Buffer.from(String(a || ''));
+  const bb = Buffer.from(String(b || ''));
+  return ba.length === bb.length && ba.length > 0 && crypto.timingSafeEqual(ba, bb);
+}
+
+app.post('/api/v1/sms-webhook', async (req, res) => {
+  const secret = process.env.SMS_WEBHOOK_SECRET || '';
+  if (secret.length < 16) {
+    return res.status(503).json({ error: 'SMS webhook disabled. Set SMS_WEBHOOK_SECRET (min 16 chars) in .env' });
+  }
+  const given = req.headers['x-sms-secret'] || req.query.secret || (req.body && req.body.secret);
+  if (!safeEqual(given, secret)) {
+    return res.status(401).json({ error: 'Invalid secret' });
+  }
+
+  const b = req.body || {};
+  const sender = b.from || b.sender || b.address || '';
+  const text = b.text || b.message || b.body || b.content || '';
+  const receivedAt = b.receivedStamp || b.timestamp || b.sentStamp || b.date || null;
+
+  if (!isTrustedSmsSender(sender)) {
+    return res.json({ success: true, ignored: true, reason: 'Sender not in trusted bank list' });
+  }
+
+  const payment = parseBankSms(sender, text, receivedAt);
+  if (!payment) {
+    return res.json({ success: true, ignored: true, reason: 'Not a UPI credit SMS' });
+  }
+
+  const merchantId = b.merchantId || req.query.merchantId || 'merch_default';
+  const merchant = store.getMerchantById(merchantId);
+  if (!merchant) return res.status(404).json({ error: 'Merchant not found' });
+
+  const watcher = watcherManager.getOrCreate(merchant);
+  if (!watcher) return res.status(500).json({ error: 'Watcher not available' });
+
+  console.log(`[SMS] Credit ₹${payment.amount} UTR ${payment.utr} from ${sender}`);
+  await watcher.handleIncomingPayment(payment);
+
+  return res.json({ success: true, accepted: true, amount: payment.amount, utr: payment.utr });
 });
 
 // Simulation endpoint to test concurrent payments
