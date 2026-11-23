@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     orderRefDisplay.textContent = o.orderId || o.orderCode;
     merchantNameDisplay.textContent = m.businessName || 'SidTech 366';
-    merchantLogo.textContent = ((m.businessName || 'Apex')[0] || 'A').toUpperCase();
+    merchantLogo.textContent = ((m.businessName || 'SidTech')[0] || 'S').toUpperCase();
     amountDisplay.textContent = `₹${parseFloat(o.amount).toFixed(2)}`;
 
     const isTestOrder = isTestRoute || (o.note && o.note.toLowerCase().includes('test')) || (parseFloat(o.amount) <= 5);

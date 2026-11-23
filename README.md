@@ -229,7 +229,7 @@ Generates a unique dynamic order with anti-collision amount and dynamic QR code.
   "currency": "INR",
   "status": "PENDING",
   "paywallUrl": "/pay/PAY-898968-338",
-  "dynamicUpiUrl": "upi://pay?pa=yourhandle@fam&pn=Apex%20Cloud&am=10.00&cu=INR&tn=PAY898968338&tr=PAY898968338",
+  "dynamicUpiUrl": "upi://pay?pa=yourhandle@fam&pn=SidTech%20366&am=10.00&cu=INR&tn=PAY898968338&tr=PAY898968338",
   "dynamicQrDataUrl": "data:image/png;base64,iVBORw..."
 }
 ```
