@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const m = orderData.merchant || {};
 
     orderRefDisplay.textContent = o.orderId || o.orderCode;
-    merchantNameDisplay.textContent = m.businessName || 'Apex Cloud & Payments';
+    merchantNameDisplay.textContent = m.businessName || 'SidTech 366';
     merchantLogo.textContent = ((m.businessName || 'Apex')[0] || 'A').toUpperCase();
     amountDisplay.textContent = `₹${parseFloat(o.amount).toFixed(2)}`;
 
@@ -383,7 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
     successAmtDisplay.textContent = `₹${amt}`;
     receiptOrderId.textContent = order.orderId;
     receiptPayer.textContent = (payment && payment.senderName) || (order && order.customerName) || 'UPI Customer';
-    receiptPayee.textContent = (orderData && orderData.merchant && orderData.merchant.businessName) || 'Apex Cloud & Payments';
+    receiptPayee.textContent = (orderData && orderData.merchant && orderData.merchant.businessName) || 'SidTech 366';
     receiptUtr.textContent = (payment && payment.utr) || (order.paymentDetails && order.paymentDetails.utr) || 'Confirmed';
     receiptTxnId.textContent = (payment && payment.txnId) || (order.paymentDetails && order.paymentDetails.txnId) || `TXN-${(payment && payment.utr) || Date.now()}`;
     

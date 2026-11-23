@@ -141,7 +141,7 @@ PORT=3000
 
 # Merchant Display Information
 PAYEE_NAME=SidTech 366
-BUSINESS_NAME=Apex Cloud & Payments
+BUSINESS_NAME=SidTech 366
 UPI_ID=yourname@upi
 
 # Gmail IMAP Auto-Verification
@@ -169,7 +169,7 @@ You should see:
 ```text
 ====================================================
 🚀 SidPay Platform running at: http://localhost:3000
-💼 Active Merchant: Apex Cloud & Payments
+💼 Active Merchant: SidTech 366
 📧 Monitoring Email: your-email@gmail.com
 ====================================================
 ```

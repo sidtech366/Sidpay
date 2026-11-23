@@ -317,7 +317,7 @@ module.exports = async ({ req, res, log, error }) => {
       verified: order.status === 'PAID',
       order,
       merchant: {
-        businessName: merchant ? merchant.businessName : 'Apex Cloud & Payments',
+        businessName: merchant ? merchant.businessName : 'SidTech 366',
         upiId: merchant ? merchant.upiId : '',
         qrImagePath: merchant ? merchant.qrImagePath : '/uploads/default-qr.jpeg'
       }
@@ -387,7 +387,7 @@ module.exports = async ({ req, res, log, error }) => {
         paymentDetails: order.paymentDetails
       },
       merchant: {
-        businessName: merchant ? merchant.businessName : 'Apex Cloud & Payments',
+        businessName: merchant ? merchant.businessName : 'SidTech 366',
         upiId: merchant ? merchant.upiId : '',
         qrImagePath: merchant ? merchant.qrImagePath : '/uploads/default-qr.jpeg'
       }

@@ -21,7 +21,7 @@ function buildUpiUri({ upiVpa, merchantName, amount, orderCode, note }) {
   const cleanVpa = (upiVpa || '').trim();
 
   // 2. Payee Merchant Name: Format and sanitize (& replaced with and, stripped of disallowed chars)
-  const sanitizedName = (merchantName || 'Apex Cloud and Payments')
+  const sanitizedName = (merchantName || 'SidTech 366')
     .replace(/&/g, 'and')
     .replace(/[^a-zA-Z0-9 ]/g, '')
     .trim();

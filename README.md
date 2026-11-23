@@ -159,7 +159,7 @@ Fill in your configuration:
 PORT=3000
 PAYEE_NAME="Your Name"
 UPI_ID="yourhandle@upi"
-BUSINESS_NAME="Apex Cloud & Payments"
+BUSINESS_NAME="SidTech 366"
 
 GMAIL_USER="your-email@gmail.com"
 GMAIL_APP_PASS="your-16-char-app-password"
