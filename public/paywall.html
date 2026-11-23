@@ -35,29 +35,17 @@
         <div class="qr-frame">
           <img src="/uploads/default-qr.jpeg" alt="UPI QR code for this payment" id="dynamicQrImg" width="220" height="220">
         </div>
-        <p class="qr-caption">Scan with PhonePe, Google Pay, Paytm or any UPI app</p>
+        <p class="qr-caption">Scan with PhonePe, Google Pay, Paytm or any UPI app on another phone</p>
       </div>
 
-      <div class="apps" id="intentSection">
-        <p class="apps-label">On this phone? Open your app directly</p>
-        <div class="app-row">
-          <a id="btnPhonePe" class="app" href="#">
-            <span class="app-icon" style="--c:#5F259F">Pe</span>
-            <span class="app-name">PhonePe</span>
-          </a>
-          <a id="btnGPay" class="app" href="#">
-            <span class="app-icon" style="--c:#1A73E8">G</span>
-            <span class="app-name">Google Pay</span>
-          </a>
-          <a id="btnPaytm" class="app" href="#">
-            <span class="app-icon" style="--c:#00BAF2">Pt</span>
-            <span class="app-name">Paytm</span>
-          </a>
-          <a id="btnPayDirect" class="app" href="#">
-            <span class="app-icon app-icon-any" style="--c:#172033">UPI</span>
-            <span class="app-name" id="btnPayDirectText">Other app</span>
-          </a>
-        </div>
+      <div class="same-phone" id="intentSection">
+        <p class="same-phone-title">Paying from this same phone?</p>
+        <ol class="same-phone-steps">
+          <li>Save this QR to your gallery.</li>
+          <li>Open PhonePe, Google Pay or Paytm and tap <strong>Scan</strong>.</li>
+          <li>Tap the gallery / photo icon and choose the saved QR.</li>
+        </ol>
+        <button type="button" class="btn-primary btn-block" id="saveQrBtn">Save QR to gallery</button>
       </div>
 
       <div class="upi-row">

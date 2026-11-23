@@ -212,6 +212,31 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function setupEvents() {
+    const saveQrBtn = document.getElementById('saveQrBtn');
+    if (saveQrBtn) {
+      saveQrBtn.addEventListener('click', async () => {
+        const src = dynamicQrImg.src;
+        const name = `SidTech366-${(orderData && orderData.order && orderData.order.orderId) || 'payment'}.png`;
+        try {
+          const blob = await (await fetch(src)).blob();
+          const file = new File([blob], name, { type: blob.type || 'image/png' });
+          // Phones that support sharing files can save straight to Photos
+          if (navigator.canShare && navigator.canShare({ files: [file] }) && /iPhone|iPad/i.test(navigator.userAgent)) {
+            await navigator.share({ files: [file], title: 'Payment QR' });
+            return;
+          }
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = name;
+          document.body.appendChild(a); a.click(); a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 2000);
+          showToast('QR saved. Now open your UPI app, tap Scan and pick it from the gallery.');
+        } catch (e) {
+          showToast('Could not save. Long-press the QR image and choose "Download image".');
+        }
+      });
+    }
+
     copyUpiBtn.addEventListener('click', () => {
       const id = upiIdDisplay.textContent;
       navigator.clipboard.writeText(id).then(() => {
