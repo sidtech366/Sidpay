@@ -14,7 +14,34 @@ class Store {
     this.mongoReady = false;
     this.loadLocal();
     this.ensureDefaultMerchant();
+    this.applyEnvToDefaultMerchant();
     this.initMongo();
+  }
+
+  /**
+   * Render / .env settings are the source of truth for the default merchant.
+   * Change UPI_ID, BUSINESS_NAME, PAYEE_NAME or MERCHANT_PASSWORD in Render,
+   * redeploy, and the saved merchant is updated (also in MongoDB).
+   */
+  applyEnvToDefaultMerchant() {
+    const m = this.data.merchants['merch_default'];
+    if (!m) return;
+    const updates = {};
+    const env = (k) => (process.env[k] || '').trim();
+    if (env('UPI_ID') && env('UPI_ID') !== m.upiId) updates.upiId = env('UPI_ID');
+    if (env('BUSINESS_NAME') && env('BUSINESS_NAME') !== m.businessName) updates.businessName = env('BUSINESS_NAME');
+    if (env('PAYEE_NAME') && env('PAYEE_NAME') !== m.name) updates.name = env('PAYEE_NAME');
+    if (process.env.MERCHANT_PASSWORD && process.env.MERCHANT_PASSWORD !== m.password) updates.password = process.env.MERCHANT_PASSWORD;
+    if (Object.keys(updates).length === 0) return;
+    Object.assign(m, updates);
+    this.saveLocal();
+    if (this.mongoReady) {
+      MerchantModel.findOneAndUpdate({ id: m.id }, { $set: updates }).catch(err => {
+        console.error('[Store] Mongo env-sync error:', err.message);
+      });
+    }
+    const shown = Object.keys(updates).map(k => k === 'password' ? 'password' : `${k}=${updates[k]}`).join(', ');
+    console.log(`[Store] Default merchant updated from settings: ${shown}`);
   }
 
   loadLocal() {
@@ -55,6 +82,7 @@ class Store {
         console.log('[Store] Loading data from MongoDB Atlas...');
         await this.loadFromMongo();
       }
+      this.applyEnvToDefaultMerchant();
     } catch (err) {
       console.error('[Store] MongoDB sync error:', err.message);
     }
