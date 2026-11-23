@@ -680,16 +680,16 @@ app.post('/api/v1/sms-webhook', async (req, res) => {
 // Accepts GET or POST; values from query string, form body or JSON body.
 // ==============================================================
 async function handleNotifyWebhook(req, res) {
-  const secret = process.env.SMS_WEBHOOK_SECRET || '';
+  const secret = (process.env.SMS_WEBHOOK_SECRET || '').trim();
   const q = Object.assign({}, req.query || {}, (req.body && typeof req.body === 'object') ? req.body : {});
   // Simple MacroDroid setup: plain-text body = [notification]
   if (typeof req.body === 'string' && req.body.trim()) q.text = req.body;
-  const given = String(req.headers['x-sms-secret'] || q.secret || '');
+  const given = String(req.headers['x-sms-secret'] || q.secret || '').trim();
   if (secret.length < 16) {
     return res.status(503).json({ error: 'Webhook disabled. Set SMS_WEBHOOK_SECRET (min 16 chars)' });
   }
   if (!safeEqual(given, secret) && !safeEqual(given.replace(/ /g, '+'), secret)) {
-    console.log('[NOTIFY] Rejected: wrong or missing secret');
+    console.log(`[NOTIFY] Rejected: wrong or missing secret (got ${given ? given.length + ' characters' : 'nothing'}, expected ${secret.length})`);
     return res.status(401).json({ error: 'Invalid secret' });
   }
 
