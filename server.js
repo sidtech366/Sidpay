@@ -706,7 +706,8 @@ async function handleNotifyWebhook(req, res) {
   }
   const payment = parsePhonePeNotification(title, text, q.time || q.timestamp);
   if (!payment) {
-    console.log('[NOTIFY] Ignored: not a "received" payment notification');
+    const odd = [...String(title) + String(text)].filter(ch => ch.charCodeAt(0) > 126).map(ch => 'U+' + ch.charCodeAt(0).toString(16).toUpperCase());
+    console.log(`[NOTIFY] Ignored: not a "received" payment notification. Full text: ${String(text).slice(0, 200)}${odd.length ? ' | special chars: ' + [...new Set(odd)].join(' ') : ''}`);
     return res.json({ success: true, ignored: true, reason: 'Not a received-payment notification' });
   }
 

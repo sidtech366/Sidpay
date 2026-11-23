@@ -23,8 +23,18 @@ function isTrustedApp(app) {
   return getAllowedApps().includes(a);
 }
 
+// Android notifications often contain invisible characters (zero-width
+// spaces, direction marks around names). Remove them before matching.
+function cleanText(t) {
+  return String(t || '')
+    .replace(/[\u200B-\u200F\u202A-\u202E\u2060-\u2069\uFEFF\u00AD]/g, '')
+    .replace(/[\s\u00A0\u2000-\u200A\u202F\u205F\u3000]+/g, ' ')
+    .replace(/[\u2018\u2019]/g, "'")
+    .trim();
+}
+
 function parsePhonePeNotification(title, text, receivedAt) {
-  const combined = `${title || ''} ${text || ''}`.replace(/\s+/g, ' ').trim();
+  const combined = cleanText(`${title || ''} ${text || ''}`);
   if (!combined) return null;
 
   // Only money RECEIVED. Ignore "sent", "paid", refunds, settlements, offers.
@@ -62,4 +72,4 @@ function parsePhonePeNotification(title, text, receivedAt) {
   };
 }
 
-module.exports = { parsePhonePeNotification, isTrustedApp };
+module.exports = { parsePhonePeNotification, isTrustedApp, cleanText };
