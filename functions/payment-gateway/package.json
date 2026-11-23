@@ -1,0 +1,10 @@
+{
+  "name": "sidpay-function",
+  "version": "1.0.0",
+  "description": "SidPay Serverless API for Appwrite Functions with MongoDB Atlas",
+  "main": "src/main.js",
+  "dependencies": {
+    "mongoose": "^9.12.1",
+    "qrcode": "^1.5.4"
+  }
+}

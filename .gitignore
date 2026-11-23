@@ -1,0 +1,35 @@
+# Dependency directories
+node_modules/
+functions/payment-gateway/node_modules/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+*.env
+
+# Local database cache & data files containing credentials
+data/store.json
+
+# Build and deployment caches
+.vercel/
+public/.vercel/
+.appwrite/
+
+# Agent & workspace cache
+.agents/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Archives
+*.zip
+*.tar.gz
+
+# OS metadata
+.DS_Store
+Thumbs.db

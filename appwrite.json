@@ -1,0 +1,27 @@
+{
+  "projectId": "YOUR_APPWRITE_PROJECT_ID",
+  "projectName": "SidPay Gateway",
+  "functions": [
+    {
+      "$id": "payment-gateway",
+      "name": "payment-gateway",
+      "runtime": "node-22",
+      "path": "functions/payment-gateway",
+      "entrypoint": "src/main.js",
+      "commands": "npm install",
+      "ignore": [
+        "node_modules",
+        ".git"
+      ],
+      "execute": [
+        "any"
+      ],
+      "events": [],
+      "schedule": "",
+      "timeout": 900,
+      "variables": {
+        "MONGODB_URI": "mongodb+srv://<username>:<password>@cluster.mongodb.net/sidpay?retryWrites=true&w=majority"
+      }
+    }
+  ]
+}

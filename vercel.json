@@ -1,0 +1,25 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/pay/:path*",
+      "destination": "/paywall"
+    },
+    {
+      "source": "/checkout/:path*",
+      "destination": "/paywall"
+    },
+    {
+      "source": "/test/:path*",
+      "destination": "/paywall"
+    },
+    {
+      "source": "/test",
+      "destination": "/paywall"
+    },
+    {
+      "source": "/api/:match*",
+      "destination": "https://YOUR_APPWRITE_FUNCTION_DOMAIN/api/:match*"
+    }
+  ]
+}

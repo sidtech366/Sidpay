@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SidPay • Direct UPI Settlement &amp; Automated Verification</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+</head>
+<body class="light-mode">
+  <div class="bg-grid"></div>
+  <div class="bg-glow-radial"></div>
+
+  <!-- MASTER NAVIGATION -->
+  <header class="navbar">
+    <div class="nav-inner">
+      <div class="nav-brand" id="brandLogo">
+        <div class="brand-logo-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <div class="brand-name-wrap">
+          <span class="brand-title">SidPay</span>
+          <span class="brand-tag">0% FEE</span>
+        </div>
+      </div>
+
+      <nav class="nav-links">
+        <a href="#architecture" class="nav-link">Architecture</a>
+        <a href="#comparison" class="nav-link">Comparison</a>
+        <a href="#stageshow-demo" class="nav-link">Interactive Demo</a>
+        <a href="#api-section" class="nav-link">API &amp; SDKs</a>
+      </nav>
+
+      <div class="nav-actions">
+        <div class="watcher-live-pill" id="navWatcherStatus">
+          <span class="pulse-dot"></span>
+          <span class="watcher-text" id="navWatcherText">IMAP Stream: Active</span>
+        </div>
+        <button type="button" class="btn-nav-secondary" id="btnNavLogin">Sign In</button>
+        <button type="button" class="btn-nav-primary" id="btnNavRegister">Get Started Free</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- APP VIEW CONTAINER (SPA) -->
+  <div id="appContainer">
+
+    <!-- ==============================================================
+         VIEW 1: LANDING PAGE & STAGESHOW HERO
+         ============================================================== -->
+    <section class="view-section active" id="viewLanding">
+      
+      <!-- HERO SECTION -->
+      <div class="hero-container">
+        <div class="hero-pill">
+          <span class="hero-pill-badge">PRODUCTION READY</span>
+          <span>Zero-Fee Peer-to-Peer UPI Payment Gateway</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </div>
+
+        <h1 class="hero-title">
+          Peer-to-peer UPI checkout.<br>
+          <span class="text-gradient">Zero gateway fees. Real-time verification.</span>
+        </h1>
+
+        <p class="hero-subtitle">
+          Direct FamPay settlement with automated IMAP bank verification in under 1.5 seconds. No 2.5% transaction deductions, no 3-day payout holds, and no risk of account freezes.
+        </p>
+
+        <div class="hero-cta-group">
+          <button type="button" class="btn-hero-primary" id="btnHeroGetStarted">
+            <span>Start Free Setup</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </button>
+          <button type="button" class="btn-hero-secondary" id="btnHeroDemoCheckout">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            <span>Launch Live Checkout</span>
+          </button>
+          <button type="button" class="btn-hero-interactive" id="btnTriggerHeroSimulation">
+            <span>⚡ Test Interactive Payment Flow</span>
+          </button>
+        </div>
+
+        <!-- STAGESHOW HERO ILLUSTRATION (Browser Window + Satellite iPhone) -->
+        <div class="stageshow-stage" id="stageshow-demo">
+          
+          <!-- Faux Browser Window -->
+          <div class="faux-window">
+            <div class="window-chrome">
+              <div class="chrome-dots">
+                <span class="dot-red"></span>
+                <span class="dot-yellow"></span>
+                <span class="dot-green"></span>
+              </div>
+              <div class="chrome-address-bar">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                <span>https://sidtech366.vercel.app/pay/PAY-892104</span>
+              </div>
+              <div class="chrome-badge">
+                <span class="dot-live"></span> 256-Bit SSL Secured
+              </div>
+            </div>
+
+            <div class="window-body">
+              <div class="faux-checkout-grid">
+                
+                <div class="faux-left">
+                  <div class="faux-merchant-header">
+                    <div class="faux-avatar">A</div>
+                    <div>
+                      <div class="faux-m-name">Apex Cloud Services</div>
+                      <div class="faux-verified">✓ Verified FamPay Payee</div>
+                    </div>
+                  </div>
+
+                  <div class="faux-price-block">
+                    <span class="faux-label">Order Total</span>
+                    <div class="faux-price">₹500.00 <span class="faux-curr">INR</span></div>
+                    <div class="faux-note">Cloud Server Deployment #892104</div>
+                  </div>
+
+                  <div class="faux-status-radar" id="heroRadarBox">
+                    <span class="faux-pulse" id="heroRadarPulse"></span>
+                    <div>
+                      <div class="faux-radar-text" id="heroRadarTitle">Auto-verifying payment in real time...</div>
+                      <div class="faux-radar-sub" id="heroRadarSub">Listening to bank email stream for exact ₹500.00 credit alert</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="faux-right">
+                  <div class="faux-qr-card" id="heroQrCard">
+                    <div class="faux-qr-wrap">
+                      <div class="faux-scan-bar" id="heroScanBar"></div>
+                      <img src="/uploads/default-qr.jpeg" alt="Faux QR" class="faux-qr-img">
+                    </div>
+                    <div class="faux-qr-tag">DOWN PAYMENT • SCAN &amp; PAY</div>
+                    <div class="faux-upi-id">UPI: yourname@upi</div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Satellite Phone (Stageshow component) -->
+          <div class="satellite-phone">
+            <div class="phone-rim">
+              <div class="phone-speaker"></div>
+              <div class="phone-screen">
+                <div class="phone-header">
+                  <span>9:41</span>
+                  <span>5G 100%</span>
+                </div>
+
+                <div class="phone-notification animate-slide-in" id="heroPhoneNotif">
+                  <div class="notif-top">
+                    <span class="notif-app">FamApp</span>
+                    <span class="notif-time">Just now</span>
+                  </div>
+                  <div class="notif-body">
+                    <strong>Payment Received!</strong>
+                    <p>₹500.00 received from Alex Rivera. UTR: 491348360326</p>
+                  </div>
+                </div>
+
+                <div class="phone-verified-pill animate-fade-in" id="heroPhonePill">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                  <span>Auto-Verified in 1.4s</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- TECHNICAL ARCHITECTURE PIPELINE SECTION -->
+      <div class="architecture-container" id="architecture">
+        <div class="section-head">
+          <span class="section-tag">ENGINEERING ARCHITECTURE</span>
+          <h2 class="section-title">How sub-second auto-verification works</h2>
+          <p class="section-sub">Zero manual reconciliation. We turn standard bank notification streams into a programmable payment gateway.</p>
+        </div>
+
+        <div class="arch-flow-grid">
+          <div class="arch-card">
+            <div class="arch-num">01</div>
+            <h4>Dynamic QR Generation</h4>
+            <p>Customer opens checkout. SidPay generates a dynamic QR embedding <code>upi://pay?pa=...&amp;am=...&amp;tn=...</code> pre-filling the exact amount.</p>
+          </div>
+
+          <div class="arch-arrow">→</div>
+
+          <div class="arch-card">
+            <div class="arch-num">02</div>
+            <h4>P2P Settlement</h4>
+            <p>Customer authorizes payment via Google Pay, PhonePe, Paytm, or FamApp. 100% of the funds land directly in your bank account immediately.</p>
+          </div>
+
+          <div class="arch-arrow">→</div>
+
+          <div class="arch-card">
+            <div class="arch-num">03</div>
+            <h4>Active IMAP Stream</h4>
+            <p>The bank emits a transactional alert to your Gmail. SidPay's active NOOP listener catches the email payload in milliseconds.</p>
+          </div>
+
+          <div class="arch-arrow">→</div>
+
+          <div class="arch-card">
+            <div class="arch-num">04</div>
+            <h4>Atomic Verification</h4>
+            <p>The concurrency engine extracts UTR, amount, and timestamp, claims the pending order, and dispatches an instant SSE success event.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- DIRECT COMPARISON TABLE SECTION -->
+      <div class="comparison-container" id="comparison">
+        <div class="section-head">
+          <span class="section-tag">THE MATH</span>
+          <h2 class="section-title">Stop paying the gateway tax</h2>
+          <p class="section-sub">See how traditional payment aggregators drain your margin compared to direct UPI settlement.</p>
+        </div>
+
+        <div class="table-wrap">
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th class="col-highlight">SidPay Gateway</th>
+                <th>Traditional Aggregators (Razorpay / Cashfree)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Transaction Fee</td>
+                <td class="col-highlight text-emerald font-bold">0.00% (Free Direct P2P)</td>
+                <td>2.00% to 2.50% + 18% GST per payment</td>
+              </tr>
+              <tr>
+                <td>Payout Settlement Time</td>
+                <td class="col-highlight text-emerald font-bold">0 Seconds (Instant in Bank)</td>
+                <td>T+2 to T+3 business days</td>
+              </tr>
+              <tr>
+                <td>Merchant Onboarding &amp; KYC</td>
+                <td class="col-highlight font-bold">3 Minutes (Upload QR &amp; App Pass)</td>
+                <td>5 to 14 days manual document review</td>
+              </tr>
+              <tr>
+                <td>Rolling Reserves / Holds</td>
+                <td class="col-highlight text-emerald font-bold">None (100% Liquidity)</td>
+                <td>10% to 15% withheld for 90 days</td>
+              </tr>
+              <tr>
+                <td>Customer Payment Experience</td>
+                <td class="col-highlight font-bold">Native UPI App pre-filled with exact amount</td>
+                <td>Clunky redirect pages with OTP delays</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ==============================================================
+         VIEW 2: AUTHENTICATION SCREEN
+         ============================================================== -->
+    <section class="view-section" id="viewAuth">
+      <div class="auth-card-wrapper">
+        <div class="auth-card">
+          
+          <div class="auth-header">
+            <div class="auth-brand-logo">A</div>
+            <h2 class="auth-title" id="authTitle">Sign In to SidPay</h2>
+            <p class="auth-subtitle" id="authSubtitle">Manage your payment gateway, API keys, and live transactions.</p>
+          </div>
+
+          <div class="auth-tabs">
+            <button type="button" class="auth-tab active" id="tabSignIn">Sign In</button>
+            <button type="button" class="auth-tab" id="tabSignUp">Create Account</button>
+          </div>
+
+          <!-- Sign In Form -->
+          <form class="auth-form" id="formSignIn">
+            <div class="form-group">
+              <label class="form-label" for="loginEmail">Email Address</label>
+              <input type="email" id="loginEmail" class="form-control" placeholder="name@business.com" value="" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="loginPass">Password</label>
+              <input type="password" id="loginPass" class="form-control" placeholder="••••••••" value="password123" required>
+            </div>
+
+            <button type="submit" class="btn-auth-submit" id="btnSubmitLogin">
+              <span>Sign In to Dashboard</span>
+            </button>
+
+            <button type="button" class="btn-demo-account" id="btnQuickDemoLogin">
+              ⚡ Quick Sign In with Demo Merchant Account
+            </button>
+          </form>
+
+          <!-- Sign Up Form (Hidden by default) -->
+          <form class="auth-form hidden" id="formSignUp">
+            <div class="form-group">
+              <label class="form-label" for="regName">Full Name</label>
+              <input type="text" id="regName" class="form-control" placeholder="Your Name" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="regBusiness">Business / Store Name</label>
+              <input type="text" id="regBusiness" class="form-control" placeholder="Apex Studio" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="regEmail">Email Address</label>
+              <input type="email" id="regEmail" class="form-control" placeholder="merchant@gmail.com" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="regPass">Create Password</label>
+              <input type="password" id="regPass" class="form-control" placeholder="Minimum 8 characters" required>
+            </div>
+
+            <button type="submit" class="btn-auth-submit" id="btnSubmitRegister">
+              <span>Create Merchant Account</span>
+            </button>
+          </form>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ==============================================================
+         VIEW 3: ONBOARDING WIZARD
+         ============================================================== -->
+    <section class="view-section" id="viewOnboarding">
+      <div class="onboarding-wrapper">
+        
+        <!-- Step Navigation Bar -->
+        <div class="onboarding-progress-bar">
+          <div class="progress-step active" data-step="1">
+            <span class="step-num">1</span>
+            <span class="step-label">Profile</span>
+          </div>
+          <div class="progress-line"></div>
+          <div class="progress-step" data-step="2">
+            <span class="step-num">2</span>
+            <span class="step-label">Upload QR</span>
+          </div>
+          <div class="progress-line"></div>
+          <div class="progress-step" data-step="3">
+            <span class="step-num">3</span>
+            <span class="step-label">FamApp Alert</span>
+          </div>
+          <div class="progress-line"></div>
+          <div class="progress-step" data-step="4">
+            <span class="step-num">4</span>
+            <span class="step-label">Gmail Setup</span>
+          </div>
+          <div class="progress-line"></div>
+          <div class="progress-step" data-step="5">
+            <span class="step-num">5</span>
+            <span class="step-label">API Key</span>
+          </div>
+        </div>
+
+        <div class="carousel-deck" id="onboardingDeck">
+          
+          <!-- SLIDE 1: Business Profile -->
+          <div class="carousel-slide active" id="slide1">
+            <div class="slide-card">
+              <div class="slide-badge">STEP 1 OF 5</div>
+              <h2 class="slide-title">Configure Merchant Details</h2>
+              <p class="slide-sub">Set up your business identity and primary settlement currency.</p>
+
+              <div class="form-group">
+                <label class="form-label" for="obBusinessName">Business / Brand Name</label>
+                <input type="text" id="obBusinessName" class="form-control" value="Apex Cloud Services" placeholder="e.g. Apex Digital">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="obUpiId">Settlement UPI ID</label>
+                <input type="text" id="obUpiId" class="form-control font-mono" value="" placeholder="e.g. yourname@upi">
+                <span class="form-hint">Funds will be deposited directly to this UPI ID.</span>
+              </div>
+
+              <div class="slide-footer">
+                <div></div>
+                <button type="button" class="btn-slide-next" onclick="window.nextOnboardingSlide(2)">
+                  <span>Continue to QR Upload</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLIDE 2: Upload FamPay QR Code -->
+          <div class="carousel-slide" id="slide2">
+            <div class="slide-card">
+              <div class="slide-badge">STEP 2 OF 5</div>
+              <h2 class="slide-title">Upload FamPay / UPI QR Code</h2>
+              <p class="slide-sub">Our built-in computer vision decodes your QR and enables dynamic amount embedding.</p>
+
+              <div class="upload-dropzone" id="qrDropzone">
+                <input type="file" id="qrFileInput" accept="image/*" class="file-hidden">
+                <div class="dropzone-content">
+                  <div class="dropzone-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                      <circle cx="8.5" cy="8.5" r="1.5"/>
+                      <polyline points="21 15 16 10 5 21"/>
+                    </svg>
+                  </div>
+                  <div class="dropzone-title">Click to upload or drag QR code image</div>
+                  <div class="dropzone-sub">Supports JPEG, PNG • e.g. qr-code.jpeg from folder</div>
+                  <button type="button" class="btn-select-file" id="btnSelectQrFile">Select QR Image</button>
+                </div>
+              </div>
+
+              <div class="qr-detection-preview hidden" id="qrDetectionPreview">
+                <img src="/uploads/default-qr.jpeg" alt="Uploaded QR" class="preview-thumb" id="previewQrImg">
+                <div class="detection-info">
+                  <span class="detection-badge">✓ QR Successfully Decoded</span>
+                  <div class="detected-id" id="detectedUpiTag">UPI ID: —</div>
+                  <div class="detected-sub">Ready for dynamic amount generation.</div>
+                </div>
+              </div>
+
+              <div class="slide-footer">
+                <button type="button" class="btn-slide-back" onclick="window.nextOnboardingSlide(1)">Back</button>
+                <button type="button" class="btn-slide-next" onclick="window.nextOnboardingSlide(3)">
+                  <span>Continue to FamApp Guide</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLIDE 3: FamApp Alert Tutorial -->
+          <div class="carousel-slide" id="slide3">
+            <div class="slide-card">
+              <div class="slide-badge">STEP 3 OF 5 • INTERACTIVE TUTORIAL</div>
+              <h2 class="slide-title">Enable Email Notifications in FamApp</h2>
+              <p class="slide-sub">Follow these 4 simple steps inside your FamApp application to enable credit alerts.</p>
+
+              <div class="tutorial-grid">
+                
+                <div class="tutorial-phone-wrap">
+                  <div class="tut-phone">
+                    <div class="tut-screen">
+                      <div class="tut-screen-header">
+                        <span>FamApp</span>
+                        <span class="tut-step-tag" id="tutStepIndicator">Step 1 of 4</span>
+                      </div>
+                      <div class="tut-screen-body" id="tutPhoneScreenContent">
+                        <div class="tut-illustration" id="tutIllustration">
+                          <div class="phone-card-sim">
+                            <div class="sim-avatar"></div>
+                            <div class="sim-title">Tap Profile Icon</div>
+                            <div class="sim-desc">Open FamApp on your phone and tap your top-left profile avatar.</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="tutorial-steps-list">
+                  <div class="tut-step-item active" data-step-idx="1" onclick="window.setFamTutorialStep(1)">
+                    <div class="step-circle">1</div>
+                    <div>
+                      <strong>Open FamApp Profile</strong>
+                      <p>Tap your profile icon on the home screen.</p>
+                    </div>
+                  </div>
+
+                  <div class="tut-step-item" data-step-idx="2" onclick="window.setFamTutorialStep(2)">
+                    <div class="step-circle">2</div>
+                    <div>
+                      <strong>Settings &amp; Alerts</strong>
+                      <p>Scroll down and open "Notifications &amp; Alerts".</p>
+                    </div>
+                  </div>
+
+                  <div class="tut-step-item" data-step-idx="3" onclick="window.setFamTutorialStep(3)">
+                    <div class="step-circle">3</div>
+                    <div>
+                      <strong>Enable Email Alerts</strong>
+                      <p>Toggle ON "Email notification for received payments".</p>
+                    </div>
+                  </div>
+
+                  <div class="tut-step-item" data-step-idx="4" onclick="window.setFamTutorialStep(4)">
+                    <div class="step-circle">4</div>
+                    <div>
+                      <strong>Confirm Gmail Link</strong>
+                      <p>Ensure <code class="font-mono">your Gmail</code> is your verified email.</p>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              <div class="slide-footer">
+                <button type="button" class="btn-slide-back" onclick="window.nextOnboardingSlide(2)">Back</button>
+                <button type="button" class="btn-slide-next" onclick="window.nextOnboardingSlide(4)">
+                  <span>Continue to Gmail Setup</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLIDE 4: Google App Password Setup -->
+          <div class="carousel-slide" id="slide4">
+            <div class="slide-card">
+              <div class="slide-badge">STEP 4 OF 5 • GMAIL CREDENTIALS</div>
+              <h2 class="slide-title">Connect Gmail &amp; 16-Char App Password</h2>
+              <p class="slide-sub">SidPay securely connects to your Gmail IMAP via Google's sanctioned App Passwords.</p>
+
+              <div class="app-pass-guide">
+                <div class="guide-col">
+                  <span class="guide-step-tag">1</span>
+                  <span>Go to <strong>myaccount.google.com/security</strong></span>
+                </div>
+                <div class="guide-col">
+                  <span class="guide-step-tag">2</span>
+                  <span>Verify <strong>2-Step Verification</strong> is ON</span>
+                </div>
+                <div class="guide-col">
+                  <span class="guide-step-tag">3</span>
+                  <span>Search <strong>"App passwords"</strong></span>
+                </div>
+                <div class="guide-col">
+                  <span class="guide-step-tag">4</span>
+                  <span>Name it <strong>SidPay</strong> &amp; copy the 16 letters</span>
+                </div>
+              </div>
+
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label" for="obGmailUser">Gmail Address</label>
+                  <input type="email" id="obGmailUser" class="form-control" value="" required>
+                </div>
+
+                <div class="form-group flex-1">
+                  <label class="form-label" for="obGmailPass">16-Letter App Password</label>
+                  <input type="text" id="obGmailPass" class="form-control font-mono" value="onqe fwmv ahiq fopw" placeholder="xxxx xxxx xxxx xxxx" required>
+                </div>
+              </div>
+
+              <div class="connection-test-row">
+                <button type="button" class="btn-test-connection" id="btnTestGmailImap">
+                  <span id="testBtnSpinner" class="spinner-sm hidden"></span>
+                  <span id="testBtnText">⚡ Test Gmail IMAP Connection Live</span>
+                </button>
+                <span class="test-feedback" id="testFeedback">Click above to verify your credentials.</span>
+              </div>
+
+              <div class="slide-footer">
+                <button type="button" class="btn-slide-back" onclick="window.nextOnboardingSlide(3)">Back</button>
+                <button type="button" class="btn-slide-next" id="btnCompleteOnboarding" onclick="window.finishOnboarding()">
+                  <span>Finish &amp; Get API Key</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SLIDE 5: Gateway Ready & API Key -->
+          <div class="carousel-slide" id="slide5">
+            <div class="slide-card text-center">
+              <div class="celebration-circle">🎉</div>
+              <h2 class="slide-title">Payment Gateway is Ready!</h2>
+              <p class="slide-sub">Your FamPay UPI and Gmail watcher are fully configured. You can now accept payments anywhere.</p>
+
+              <div class="api-key-reveal-box">
+                <div class="api-label">Your Live Merchant API Key</div>
+                <div class="api-key-row">
+                  <span class="api-key-text font-mono" id="obApiKeyDisplay">sid_live_9f82b7c41a58e390d4e</span>
+                  <button type="button" class="btn-copy-key" id="btnCopyObApiKey">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    <span>Copy</span>
+                  </button>
+                </div>
+                <div class="api-hint">Use this key in headers: <code>x-api-key: sid_live_...</code></div>
+              </div>
+
+              <div class="slide-footer center-footer">
+                <button type="button" class="btn-primary-large" id="btnGoToDashboard">
+                  <span>Open Merchant Dashboard</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9 18 15 12 9 6"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ==============================================================
+         VIEW 4: MERCHANT DASHBOARD
+         ============================================================== -->
+    <section class="view-section" id="viewDashboard">
+      <div class="dashboard-wrapper">
+        
+        <div class="dash-header">
+          <div>
+            <h1 class="dash-title" id="dashBusinessTitle">Apex Cloud &amp; Payments</h1>
+            <p class="dash-subtitle">Real-time payment gateway overview &amp; active concurrency monitor.</p>
+          </div>
+
+          <div class="dash-header-actions">
+            <button type="button" class="btn-dash-primary" id="btnOpenCreatePaywallModal">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              <span>Create Payment Link</span>
+            </button>
+            <button type="button" class="btn-dash-secondary" id="btnDashLogout">Log out</button>
+          </div>
+        </div>
+
+        <!-- Metric Stat Cards -->
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <div class="metric-top">
+              <span class="metric-label">Total Volume Processed</span>
+              <div class="metric-icon">₹</div>
+            </div>
+            <div class="metric-val" id="metricVolume">₹0.00</div>
+            <div class="metric-sub text-emerald">100% peer-to-peer settled</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-top">
+              <span class="metric-label">Verified Transactions</span>
+              <div class="metric-icon">✓</div>
+            </div>
+            <div class="metric-val" id="metricPaidCount">0</div>
+            <div class="metric-sub">Auto-verified via IMAP</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-top">
+              <span class="metric-label">Average Speed</span>
+              <div class="metric-icon">⚡</div>
+            </div>
+            <div class="metric-val">1.4s</div>
+            <div class="metric-sub">From bank alert to success</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="metric-top">
+              <span class="metric-label">Concurrency Engine</span>
+              <div class="metric-icon">🛡️</div>
+            </div>
+            <div class="metric-val text-emerald">Active</div>
+            <div class="metric-sub" id="metricQueueLoad">0 active concurrent queues</div>
+          </div>
+        </div>
+
+        <div class="dash-split-grid">
+          
+          <!-- Left: Filterable Live Transactions Table -->
+          <div class="dash-panel flex-2">
+            <div class="panel-header">
+              <div>
+                <h3 class="panel-title">Live Transactions Feed</h3>
+                <p class="panel-sub">Real-time bank alerts auto-verified for this merchant.</p>
+              </div>
+              <div class="panel-controls">
+                <input type="text" id="tableSearchInput" class="table-search" placeholder="Search by Order or UTR...">
+                <button type="button" class="btn-refresh" id="btnRefreshOrders">↻ Refresh</button>
+              </div>
+            </div>
+
+            <div class="table-container">
+              <table class="dash-table">
+                <thead>
+                  <tr>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Amount</th>
+                    <th>Bank UTR / Txn</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                  <!-- Injected via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Right: API & Simulator Hub -->
+          <div class="dash-panel flex-1">
+            
+            <div class="sub-panel">
+              <div class="sub-panel-title">Developer API Key</div>
+              <div class="dash-key-box">
+                <span class="font-mono text-truncate" id="dashApiKeyDisplay">sid_live_...</span>
+                <button type="button" class="btn-copy-sm" id="btnCopyDashKey">Copy</button>
+              </div>
+            </div>
+
+            <div class="sub-panel" id="api-section">
+              <div class="sub-panel-title">Integration Code Snippet</div>
+              <div class="code-tabs">
+                <button type="button" class="code-tab active" data-lang="curl">cURL</button>
+                <button type="button" class="code-tab" data-lang="node">Node.js</button>
+                <button type="button" class="code-tab" data-lang="python">Python</button>
+              </div>
+              <pre class="code-block"><code id="codeSnippetBox"></code></pre>
+            </div>
+
+            <div class="sub-panel">
+              <div class="sub-panel-title">⚡ Test Concurrency Engine</div>
+              <p class="panel-sub mb-2">Simulate two users paying simultaneously to verify race condition immunity.</p>
+              <button type="button" class="btn-simulate-concurrency" id="btnSimulateConcurrent">
+                Run Concurrent Payment Test (2 Users)
+              </button>
+              <div class="sim-feedback hidden" id="simFeedback"></div>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <!-- MODAL: CREATE PAYWALL LINK -->
+  <div class="modal-overlay hidden" id="modalCreatePaywall">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title">Create Hosted Paywall Link</h3>
+        <button type="button" class="modal-close" id="btnClosePaywallModal">&times;</button>
+      </div>
+
+      <form id="formCreatePaywall">
+        <div class="form-group">
+          <label class="form-label" for="pwAmount">Payment Amount (₹)</label>
+          <input type="number" id="pwAmount" class="form-control font-bold" min="1" step="any" value="5" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="pwCustomerName">Customer Name</label>
+          <input type="text" id="pwCustomerName" class="form-control" placeholder="Alex Rivera" value="Alex Rivera">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="pwNote">Order Note / Purpose</label>
+          <input type="text" id="pwNote" class="form-control" placeholder="e.g. Website Hosting #891" value="Website Hosting #891">
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn-slide-back" id="btnCancelPaywallModal">Cancel</button>
+          <button type="submit" class="btn-dash-primary">Generate Paywall Link</button>
+        </div>
+      </form>
+
+      <div class="paywall-result hidden" id="paywallLinkResult">
+        <div class="result-title">Hosted Paywall Link Ready:</div>
+        <div class="link-copy-row">
+          <input type="text" id="generatedPaywallUrl" class="form-control font-mono" readonly>
+          <button type="button" class="btn-dash-primary" id="btnCopyGeneratedUrl">Copy</button>
+          <a href="#" target="_blank" class="btn-dash-secondary" id="btnOpenGeneratedUrl">Open</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toastContainer"></div>
+
+  <script src="/app.js"></script>
+  <div style="text-align:center;font-size:12px;color:#64748b;padding:14px 8px;">Powered by <b>SidPay</b> • SidTech 366 • 7069492135 • <a href="https://sidtech366.vercel.app" style="color:inherit">sidtech366.vercel.app</a></div>
+</body>
+</html>

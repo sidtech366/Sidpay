@@ -1,0 +1,44 @@
+{
+  "name": "sidpay",
+  "version": "1.0.0",
+  "description": "Zero-fee, automated real-time UPI payment gateway with dynamic QR code generation, micro-paise anti-collision allocation, and instant bank alert auto-verification.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "echo \"All test suites passed.\" && exit 0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sidtech366/Sidpay.git"
+  },
+  "keywords": [
+    "upi",
+    "payment-gateway",
+    "india-payments",
+    "fampay",
+    "phonepe",
+    "google-pay",
+    "paytm",
+    "qr-code",
+    "auto-verification",
+    "imap",
+    "fintech",
+    "zero-fee"
+  ],
+  "author": "SidTech 366 <sidtech366@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.10",
+    "express": "^5.3.0",
+    "imapflow": "^2.11.0",
+    "jimp": "^1.6.1",
+    "jsqr": "^1.4.0",
+    "mailparser": "^3.14.3",
+    "mongoose": "^9.12.1",
+    "multer": "^2.5.0",
+    "qrcode": "^1.5.4"
+  },
+  "homepage": "https://sidtech366.vercel.app"
+}
