@@ -437,7 +437,7 @@ app.post('/api/v1/checkout/create', async (req, res) => {
     amount: order.amount,
     currency: 'INR',
     status: order.status,
-    checkoutUrl: `${req.protocol}://${req.get('host')}/pay/${order.orderId}`,
+    checkoutUrl: `${req.protocol}://${req.headers.host}/pay/${order.orderId}`,
     dynamicUpiUrl: upiUri,
     dynamicQrDataUrl: qrDataUrl
   });
@@ -723,6 +723,47 @@ async function handleNotifyWebhook(req, res) {
 }
 app.get('/api/v1/notify-webhook', handleNotifyWebhook);
 app.post('/api/v1/notify-webhook', express.text({ type: ['text/*', 'application/octet-stream'], limit: '4kb' }), handleNotifyWebhook);
+
+
+// ==============================================================
+// SIDPAY VERIFIER APP (Android): heartbeat + one-tap setup
+// The app calls the heartbeat every ~9 minutes. That keeps the free
+// Render server awake and lets the dashboard show if the phone is online.
+// ==============================================================
+const verifierStatus = { lastSeen: null, device: '', version: '', queued: 0, notificationAccess: null };
+
+function verifierAuthOk(req) {
+  const secret = (process.env.SMS_WEBHOOK_SECRET || '').trim();
+  const given = String(req.headers['x-sms-secret'] || req.query.secret || '').trim();
+  return secret.length >= 16 && (safeEqual(given, secret) || safeEqual(given.replace(/ /g, '+'), secret));
+}
+
+function handleHeartbeat(req, res) {
+  if (!verifierAuthOk(req)) return res.status(401).json({ error: 'Invalid secret' });
+  const b = Object.assign({}, req.query || {}, (req.body && typeof req.body === 'object') ? req.body : {});
+  verifierStatus.lastSeen = new Date().toISOString();
+  verifierStatus.device = String(b.device || '').slice(0, 60);
+  verifierStatus.version = String(b.version || '').slice(0, 20);
+  verifierStatus.queued = parseInt(b.queued, 10) || 0;
+  verifierStatus.notificationAccess = b.access === undefined ? null : String(b.access) === 'true';
+  res.json({ success: true, serverTime: verifierStatus.lastSeen });
+}
+app.get('/api/v1/verifier/heartbeat', handleHeartbeat);
+app.post('/api/v1/verifier/heartbeat', handleHeartbeat);
+
+// Merchant only: verifier status + setup link that fills the app automatically
+app.get('/api/merchant/verifier', requireMerchant, (req, res) => {
+  const secret = (process.env.SMS_WEBHOOK_SECRET || '').trim();
+  const origin = `${req.headers['x-forwarded-proto'] || req.protocol}://${req.headers.host}`;
+  const online = !!verifierStatus.lastSeen && (Date.now() - new Date(verifierStatus.lastSeen).getTime()) < 20 * 60 * 1000;
+  res.json({
+    success: true,
+    status: Object.assign({ online }, verifierStatus),
+    setupLink: secret.length >= 16
+      ? `sidpay-verifier://setup?url=${encodeURIComponent(origin)}&secret=${encodeURIComponent(secret)}`
+      : null
+  });
+});
 
 // ==============================================================
 // SMS TEST (browser-friendly): injects a FAKE Bank of Baroda credit SMS

@@ -38,6 +38,13 @@
     .tag.ok { color: var(--green); }
     .tag.no { color: #B42318; }
     .login { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: grid; gap: 8px; }
+    .verifier { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; margin-bottom: 16px; }
+    .verifier-state { display: flex; align-items: flex-start; gap: 10px; }
+    .verifier-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 7px; background: #B42318; flex: none; }
+    .verifier-dot.on { background: var(--green); }
+    .verifier-title { font-weight: 600; font-size: 15px; }
+    .verifier-sub { font-size: 13px; color: var(--muted); }
+    .verifier a.btn-ghost { white-space: nowrap; font-size: 14px; min-height: 40px; }
     .login input { font: inherit; font-size: 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
   </style>
 </head>
@@ -58,6 +65,16 @@
     </section>
 
     <section id="app" class="hidden">
+      <div class="verifier" id="verifierBox">
+        <div class="verifier-state">
+          <span class="verifier-dot" id="verifierDot" aria-hidden="true"></span>
+          <div>
+            <p class="verifier-title" id="verifierTitle">Verifier phone: checking…</p>
+            <p class="verifier-sub" id="verifierSub"></p>
+          </div>
+        </div>
+        <a class="btn-ghost hidden" id="verifierSetup" href="#">Set up this phone</a>
+      </div>
       <p class="hint">A customer sends a request when the page did not confirm their payment by itself. Before you approve, open your bank or PhonePe Business app and check that this exact amount with this UPI Ref No has arrived.</p>
       <div id="pendingList"></div>
       <h2 class="section-title">Recently reviewed</h2>
@@ -147,7 +164,25 @@
     }).join('');
   }
 
+  async function loadVerifier() {
+    try {
+      const d = await api('/api/merchant/verifier');
+      const st = d.status || {};
+      $('verifierDot').classList.toggle('on', !!st.online);
+      if (st.online) {
+        $('verifierTitle').textContent = 'Verifier phone: online';
+        const mins = Math.max(0, Math.round((Date.now() - new Date(st.lastSeen).getTime()) / 60000));
+        $('verifierSub').textContent = `Last signal ${mins === 0 ? 'just now' : mins + ' min ago'}${st.device ? ', ' + st.device : ''}${st.notificationAccess === false ? '. Notification access is OFF on the phone.' : ''}`;
+      } else {
+        $('verifierTitle').textContent = 'Verifier phone: offline';
+        $('verifierSub').textContent = st.lastSeen ? `Last signal ${when(st.lastSeen)}. Open the SidPay Verifier app on the phone.` : 'No signal yet. Install SidPay Verifier on the PhonePe Business phone.';
+      }
+      if (d.setupLink) { $('verifierSetup').href = d.setupLink; $('verifierSetup').classList.remove('hidden'); }
+    } catch (e) {}
+  }
+
   async function load() {
+    loadVerifier();
     try {
       const data = await api('/api/merchant/claims');
       renderPending(data.pending || []);

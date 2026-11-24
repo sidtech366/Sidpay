@@ -1,0 +1,46 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.sidtech366.verifier'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.sidtech366.verifier'
+        minSdk 26
+        targetSdk 34
+        versionCode((System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger())
+        versionName "1.0.${System.getenv('GITHUB_RUN_NUMBER') ?: '0'}"
+    }
+
+    signingConfigs {
+        release {
+            def ks = System.getenv('SIDPAY_KEYSTORE_FILE')
+            if (ks && file(ks).exists()) {
+                storeFile file(ks)
+                storePassword System.getenv('SIDPAY_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('SIDPAY_KEY_ALIAS')
+                keyPassword System.getenv('SIDPAY_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            def ks = System.getenv('SIDPAY_KEYSTORE_FILE')
+            signingConfig (ks && file(ks).exists()) ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    lint {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}

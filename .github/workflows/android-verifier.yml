@@ -1,0 +1,62 @@
+name: Build SidPay Verifier APK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-verifier.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      KEYSTORE_B64: ${{ secrets.SIDPAY_KEYSTORE_B64 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      # Optional: fixed signing key (add repo secrets to allow updates without uninstalling)
+      - name: Prepare signing key
+        if: env.KEYSTORE_B64 != ''
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/sidpay.keystore"
+          echo "SIDPAY_KEYSTORE_FILE=$RUNNER_TEMP/sidpay.keystore" >> "$GITHUB_ENV"
+          echo "SIDPAY_KEYSTORE_PASSWORD=${{ secrets.SIDPAY_KEYSTORE_PASSWORD }}" >> "$GITHUB_ENV"
+          echo "SIDPAY_KEY_ALIAS=${{ secrets.SIDPAY_KEY_ALIAS }}" >> "$GITHUB_ENV"
+          echo "SIDPAY_KEY_PASSWORD=${{ secrets.SIDPAY_KEY_PASSWORD }}" >> "$GITHUB_ENV"
+
+      - name: Build APK
+        working-directory: android
+        run: gradle assembleRelease --no-daemon --stacktrace
+
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/release/app-release.apk SidPay-Verifier.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SidPay-Verifier
+          path: SidPay-Verifier.apk
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: verifier-v1.${{ github.run_number }}
+          name: SidPay Verifier 1.${{ github.run_number }}
+          body: |
+            Android app that confirms PhonePe Business payments for SidPay.
+            Download **SidPay-Verifier.apk** below and install it on the phone that has PhonePe Business.
+          files: SidPay-Verifier.apk
+          make_latest: true

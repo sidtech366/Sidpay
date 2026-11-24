@@ -310,6 +310,18 @@ Contributions are welcomed! Follow these steps:
 
 ---
 
+## 📲 SidPay Verifier (Android app)
+
+Replaces MacroDroid. Install on the phone that has **PhonePe Business**:
+
+1. Download the latest APK: https://github.com/sidtech366/Sidpay/releases/latest/download/SidPay-Verifier.apk
+2. Open it, tap **Allow notification access** and **Let it run in background**.
+3. On the same phone open `https://YOUR_SERVER/claims`, sign in, tap **Set up this phone** (fills server + secret).
+
+The app forwards PhonePe Business "received" notifications, retries when offline, and sends a heartbeat every 9 minutes (this also keeps a free Render server awake). Source: `android/`.
+
+---
+
 ## 🔔 PhonePe Business notification verification (recommended for merchant QR)
 
 With a PhonePe Business QR, bank credit SMS can be late or combined (settlement). The PhonePe Business app shows an instant notification instead:
