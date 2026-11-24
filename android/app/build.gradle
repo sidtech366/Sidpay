@@ -30,7 +30,7 @@ android {
         release {
             minifyEnabled false
             def ks = System.getenv('SIDPAY_KEYSTORE_FILE')
-            signingConfig (ks && file(ks).exists()) ? signingConfigs.release : signingConfigs.debug
+            signingConfig = (ks && file(ks).exists()) ? signingConfigs.release : signingConfigs.debug
         }
     }
 
